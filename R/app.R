@@ -19,10 +19,16 @@ ui <- fluidPage(
   sliderInput("sus", "Wie viele SuS?", min = 1, max = 30, value = 25),
 
   # Selector with numbers 1 to 5
-  selectInput("number_selector", "Turnus, z.B. jeden Montag (max. 2 Tage)", choices = wochentage, selected = wochentage[c(1, 4)], multiple = T),
+  selectizeInput("number_selector", "Turnus, z.B. jeden Montag (max. 2 Tage)", choices = wochentage, selected = "", multiple = T, options = list(maxItems = 2, placeholder ="Monday")),
 
   # Date picker with start and end date. Default für Start nächster Montag
-  dateRangeInput("halbjahr", "Halbjahr (Start - Ende)", start = floor_date(Sys.Date(), "week") + days(1), end = Sys.Date()+180, weekstart = 1),
+  shinyWidgets::airDatepickerInput("halbjahr", "Halbjahr (Start - Ende)",
+                                   minDate = floor_date(Sys.Date(), "week") + days(1),
+                                   maxDate = Sys.Date()+180,
+                                   firstDay =  1,
+                                   range = T,
+                                   placeholder =  c(floor_date(Sys.Date(), "week") + days(1), Sys.Date()+180),
+                                   clearButton = T),
 
   # tooltip hinzufügen
   tags$script(HTML('
@@ -43,12 +49,23 @@ ui <- fluidPage(
 )
 
 # Define server
-server <- function(input, output) {
+server <- function(input, output, session) {
+
+  observe({
+    req(input$number_selector)
+    disabled_days <- which(!wochentage %in% input$number_selector)
+    shinyWidgets::updateAirDateInput(session = session, "halbjahr", options = list(
+      disabledDaysOfWeek = c(0,6,disabled_days),
+      minDate = floor_date(Sys.Date(), "week") + days(which(wochentage == input$number_selector[1]))))
+
+    shinyWidgets::updateAirDateInput(session = session, "klassenarbeiten", options = list(
+      disabledDaysOfWeek = c(0,6,disabled_days)))
+  })
 
   # Download button logic
   output$download_btn <- downloadHandler(
     filename = function() {
-      if(input$filename == "character(0)"){
+      if(input$filename != ""){
         glue::glue("Notentabelle_{input$filename}.xlsx")
       } else {
         glue::glue("Notentabelle_{Sys.Date()}.xlsx")
@@ -77,7 +94,7 @@ server <- function(input, output) {
       }
 
       # Feiertage und Ferien abrufen
-      ferienintervall <- getHolidays(year(input$halbjahr[1]))
+      #ferienintervall <- getHolidays(year(input$halbjahr[1]))
 
       # Sequenz festlegen
       a <- seq(ymd(schulanfang),ymd(schulende), by = '1 week')
