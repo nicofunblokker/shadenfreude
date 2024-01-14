@@ -5,8 +5,11 @@
 library(shiny)
 library(openxlsx)
 library(lubridate)
+library(shinyjs)
 library(dplyr)
 source("./R/getHolidays.R")
+
+wochentage <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 
 # Define UI
 ui <- fluidPage(
@@ -15,15 +18,21 @@ ui <- fluidPage(
   # Numeric slider from 1 to 30
   sliderInput("sus", "SuS", min = 1, max = 30, value = 25),
 
+  # Selector with numbers 1 to 5
+  selectInput("number_selector", "Turnus (wähle 1-2)", choices = wochentage, selected = wochentage[c(1, 4)], multiple = T),
+
   # Date picker with start and end date
-  dateRangeInput("halbjahr", "Halbjahr (Start - Ende)", start = Sys.Date() - 7, end = Sys.Date()+180),
+  dateRangeInput("halbjahr", "Halbjahr (Start - Ende)", start = floor_date(Sys.Date(), "week") + days(1), end = Sys.Date()+180, weekstart = 1),
+
+  tags$script(HTML('
+    $(document).ready(function(){
+      $("#halbjahr").tooltip({title: "Wähle den ersten Unterrichtstag. Wochentag sollte mit Turnus übereinstimmen! Z.B., wenn erster Unterrichtstag an einem Donnerstag stattfindet und dann erst wieder am Montag, wähle Turnus: Thursday, Monday und Start: Thursday 11.01.2024", placement: "top", trigger: "hover", container: "body"});
+    });
+  ')),
 
   # date pickers with only one date
   shinyWidgets::airDatepickerInput("klassenarbeiten", "Klassenarbeit(en)", multiple = T,
                                    disabledDates = c(0,6), minDate = Sys.Date() - 7, maxDate = Sys.Date()+180),
-
-  # Selector with numbers 1 to 5
-  selectInput("number_selector", "Turnus", choices = 0:4, selected = 2),
 
   # Download button
   downloadButton("download_btn", "Generiere Tabelle")
@@ -42,7 +51,22 @@ server <- function(input, output) {
       schulanfang <- as.character(input$halbjahr[1])   # Halbjahresintervall festlegen
       schulende <- as.character(input$halbjahr[2])
       klassenarbeiten <- as.character(input$klassenarbeiten)  # Klassenarbeiten festlegen
-      tage <- input$number_selector # wie viele tage zwischen Unterrichtstunden (0 wenn nur 1x pro Woche)
+
+      if(!is.null(input$number_selector)){
+        tageidx <- which(wochentage %in% input$number_selector) # wie viele tage zwischen Unterrichtstunden (0 wenn nur 1x pro Woche)
+        tage <- max(tageidx) - min(tageidx)
+      } else {
+        tage <- 0                                            # ebenfalls 0, wenn keine Angabe
+      }
+
+      # consider edgecase where erster später Wochentagtag, zb Donnerstag und nicht Montag
+      if(length(input$number_selector) > 1){
+        if(grep(input$number_selector[1], wochentage) > grep(input$number_selector[2], wochentage)) {
+          tage <- tage*-1
+        } else {
+          tage
+        }
+      }
 
       # Feiertage und Ferien abrufen
       ferienintervall <- getHolidays(year(input$halbjahr[1]))
@@ -50,7 +74,15 @@ server <- function(input, output) {
       # Sequenz festlegen
       a <- seq(ymd(schulanfang),ymd(schulende), by = '1 week')
       b <- seq(ymd(schulanfang)+as.numeric(tage) ,ymd(schulende), by = '1 week')
-      termine <- unique(c(a,b)) |> sort()
+
+      # consider edgecase where erster Tag zb Donnerstag: entferne Montage vor dem gewählten Donnerstag
+      zuf <- which(b < a[1])
+      if(length(zuf) > 0){
+        termine <- unique(c(a,b[-zuf])) |> sort()
+      } else {
+        termine <- unique(c(a,b)) |> sort()
+      }
+
 
       # Feiertage ermitteln
       ausfall <- sapply(termine, function(x) any(x %within% ferienintervall))
@@ -58,8 +90,12 @@ server <- function(input, output) {
       # datensatz kreieren
       empty <- data.frame(matrix(0, ncol = length(termine), nrow = SuS))
       colnames(empty) <- termine
-      klassenarbeitsdaten <- which(colnames(empty) %in% klassenarbeiten)
-      colnames(empty)[klassenarbeitsdaten] <- paste("Klausur\n", colnames(empty)[klassenarbeitsdaten])
+
+      # wenn keine Klassenarbeiten gewählt
+      if(length(klassenarbeiten) != "character(0)"){
+        klassenarbeitsdaten <- which(colnames(empty) %in% klassenarbeiten)
+        colnames(empty)[klassenarbeitsdaten] <- paste("Klausur\n", colnames(empty)[klassenarbeitsdaten])
+      }
 
       # Letzte Spalte
       to <- tail(c(LETTERS, paste0("A", LETTERS), paste0("B", LETTERS), paste0("C", LETTERS))[6:(length(termine)+7)],1)
@@ -78,7 +114,6 @@ server <- function(input, output) {
       for(i in c(3:5)){
         class(full[,i]) <- c(class(full[,i]), "formula")
       }
-
 
       ## Notebook erstellen
       wb <- createWorkbook()
