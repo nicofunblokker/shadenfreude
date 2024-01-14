@@ -61,7 +61,61 @@ server <- function(input, output, session) {
 
     shinyWidgets::updateAirDateInput(session = session, "klassenarbeiten", options = list(
       disabledDaysOfWeek = c(0,6,disabled_days),
+      disabledDates = termine()[ausfall()],
       minDate = floor_date(Sys.Date(), "week") + days(which(wochentage == input$number_selector[1]))))
+  })
+
+  termine <- reactiveVal(0)
+  ausfall <- reactiveVal(0)
+
+  observe({
+    req(input$halbjahr[2])
+    schulanfang <- as.character(input$halbjahr[1])   # Halbjahresintervall festlegen
+    schulende <- as.character(input$halbjahr[2])
+
+    # Feiertage und Ferien abrufen
+    if(year(input$halbjahr[1]) != year(input$halbjahr[2])){
+      ferienintervall <- c(getHolidays(year(input$halbjahr[1])),
+                           getHolidays(year(input$halbjahr[2]), pause = 5))
+    } else {
+      ferienintervall <- getHolidays(year(input$halbjahr[1]))
+    }
+
+    if(!is.null(input$number_selector)){
+      tageidx <- which(wochentage %in% input$number_selector) # wie viele tage zwischen Unterrichtstunden (0 wenn nur 1x pro Woche)
+      tage <- max(tageidx) - min(tageidx)
+    } else {
+      tage <- 0                                            # ebenfalls 0, wenn keine Angabe
+    }
+
+    # consider edgecase: Schulbeginn an Donnerstag, Turnus aber Montag - Donnerstag. Dann nicht 3 Tage vor, sondern zurück
+    if(length(input$number_selector) > 1){
+      if(grep(input$number_selector[1], wochentage) > grep(input$number_selector[2], wochentage)) {
+        tage <- tage*-1
+      } else {
+        tage
+      }
+    }
+
+    # Sequenz festlegen
+    a <- seq(ymd(schulanfang),ymd(schulende), by = '1 week')
+    b <- seq(ymd(schulanfang)+as.numeric(tage) ,ymd(schulende), by = '1 week')
+
+    # consider edgecase: Schulbeginn an Donnerstag, Turnus aber Montag - Donnerstag. Dann nicht 3 Tage vor, sondern zurück.
+    # Allerdings OHNE den Montag in der ausgewählten Woche -> zufrüh
+    zuf <- which(b < a[1])
+    if(length(zuf) > 0){
+      termine <- unique(c(a,b[-zuf])) |> sort()
+    } else {
+      termine <- unique(c(a,b)) |> sort()
+    }
+
+    # Feiertage ermitteln
+    ausfall <- sapply(termine, function(x) any(x %within% ferienintervall))
+
+    # reactive values auffüllen
+    ausfall(ausfall)
+    termine(termine)
   })
 
   # Download button logic
@@ -74,55 +128,15 @@ server <- function(input, output, session) {
       }
     },
     content = function(file) {
+      print(termine())
       SuS <- as.numeric(input$sus)   # Specify the number SuS
-      schulanfang <- as.character(input$halbjahr[1])   # Halbjahresintervall festlegen
-      schulende <- as.character(input$halbjahr[2])
+
       klassenarbeiten <- as.character(input$klassenarbeiten)  # Klassenarbeiten festlegen
 
-      if(!is.null(input$number_selector)){
-        tageidx <- which(wochentage %in% input$number_selector) # wie viele tage zwischen Unterrichtstunden (0 wenn nur 1x pro Woche)
-        tage <- max(tageidx) - min(tageidx)
-      } else {
-        tage <- 0                                            # ebenfalls 0, wenn keine Angabe
-      }
-
-      # consider edgecase: Schulbeginn an Donnerstag, Turnus aber Montag - Donnerstag. Dann nicht 3 Tage vor, sondern zurück
-      if(length(input$number_selector) > 1){
-        if(grep(input$number_selector[1], wochentage) > grep(input$number_selector[2], wochentage)) {
-          tage <- tage*-1
-        } else {
-          tage
-        }
-      }
-
-      # Feiertage und Ferien abrufen
-      if(year(input$halbjahr[1]) != year(input$halbjahr[2])){
-        ferienintervall <- c(getHolidays(year(input$halbjahr[1])),
-                             getHolidays(year(input$halbjahr[2]), pause = 5))
-      } else {
-        ferienintervall <- getHolidays(year(input$halbjahr[1]))
-      }
-
-
-      # Sequenz festlegen
-      a <- seq(ymd(schulanfang),ymd(schulende), by = '1 week')
-      b <- seq(ymd(schulanfang)+as.numeric(tage) ,ymd(schulende), by = '1 week')
-
-      # consider edgecase: Schulbeginn an Donnerstag, Turnus aber Montag - Donnerstag. Dann nicht 3 Tage vor, sondern zurück.
-      # Allerdings OHNE den Montag in der ausgewählten Woche -> zufrüh
-      zuf <- which(b < a[1])
-      if(length(zuf) > 0){
-        termine <- unique(c(a,b[-zuf])) |> sort()
-      } else {
-        termine <- unique(c(a,b)) |> sort()
-      }
-
-      # Feiertage ermitteln
-      ausfall <- sapply(termine, function(x) any(x %within% ferienintervall))
 
       # datensatz kreieren
-      empty <- data.frame(matrix(0, ncol = length(termine), nrow = SuS))
-      colnames(empty) <- termine
+      empty <- data.frame(matrix(0, ncol = length(termine()), nrow = SuS))
+      colnames(empty) <- termine()
 
       # wenn keine Klassenarbeiten gewählt, mache nichts
       if(length(klassenarbeiten) != "character(0)"){
@@ -131,7 +145,7 @@ server <- function(input, output, session) {
       }
 
       # Letzte Spalte
-      to <- tail(c(LETTERS, paste0("A", LETTERS), paste0("B", LETTERS), paste0("C", LETTERS))[6:(length(termine)+7)],1)
+      to <- tail(c(LETTERS, paste0("A", LETTERS), paste0("B", LETTERS), paste0("C", LETTERS))[6:(length(termine())+7)],1)
 
       # Variablen einführen
       empty$ID = 1:SuS
@@ -158,11 +172,11 @@ server <- function(input, output, session) {
       posStyle <- createStyle(bgFill = "#C6EFCE")
       negStyle <- createStyle(bgFill = "#FFC7CE")
 
-      idx0 <- which(colnames(full) %in% termine)
+      idx0 <- which(colnames(full) %in% termine())
       conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1:(SuS+1), style = posStyle, rule = "",
                             type = "contains")
 
-      idx <- which(colnames(full) %in% termine[ausfall])
+      idx <- which(colnames(full) %in% termine()[ausfall()])
       for(i in idx){
         conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1:(SuS+1), style = neutralStyle, rule = "",
                               type = "contains")
