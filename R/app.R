@@ -94,7 +94,7 @@ server <- function(input, output, session) {
       }
 
       # Feiertage und Ferien abrufen
-      #ferienintervall <- getHolidays(year(input$halbjahr[1]))
+      ferienintervall <- getHolidays(year(input$halbjahr[1]))
 
       # Sequenz festlegen
       a <- seq(ymd(schulanfang),ymd(schulende), by = '1 week')
@@ -167,7 +167,7 @@ server <- function(input, output, session) {
       }
 
       # notenspiegel
-      notenspiegel <- data.frame(Note = 1:6, Anzahl = sprintf("=COUNTIF(Noten!C%d:Noten!C%d, %d)", 2, SuS+1, 1:6))
+      notenspiegel <- data.frame(Note = 1:6, Anzahl = sprintf('=COUNTIFS(Noten!C%d:Noten!C%d, ">%d,5", Noten!C%d:Noten!C%d, "<=%d,5")', 2, SuS+1, 0:5, 2, SuS+1, 1:6))
       class(notenspiegel$Anzahl) <- c(class(notenspiegel$Anzahl), "formula")
       addWorksheet(wb, "Notenspiegel")
       writeData(wb, "Notenspiegel", x = notenspiegel)
