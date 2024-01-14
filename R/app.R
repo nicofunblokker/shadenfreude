@@ -5,7 +5,6 @@
 library(shiny)
 library(openxlsx)
 library(lubridate)
-library(shinyjs)
 library(dplyr)
 source("./R/getHolidays.R")
 
@@ -16,13 +15,13 @@ ui <- fluidPage(
   titlePanel("Notentabelle"),
 
   # Numeric slider from 1 to 30
-  sliderInput("sus", "Wie viele SuS?", min = 1, max = 30, value = 25),
+  sliderInput("sus", "1. Wie viele SuS?", min = 1, max = 30, value = 25),
 
   # Selector with numbers 1 to 5
-  selectizeInput("number_selector", "Turnus, z.B. jeden Montag (max. 2 Tage)", choices = wochentage, selected = "", multiple = T, options = list(maxItems = 2, placeholder ="Monday")),
+  selectizeInput("number_selector", "2. Turnus, z.B. jeden Montag (max. 2 Tage)", choices = wochentage, selected = "", multiple = T, options = list(maxItems = 2, placeholder ="Monday")),
 
   # Date picker with start and end date. Default für Start nächster Montag
-  shinyWidgets::airDatepickerInput("halbjahr", "Halbjahr (Start - Ende)",
+  shinyWidgets::airDatepickerInput("halbjahr", "3. Halbjahr (Start - Ende)",
                                    minDate = floor_date(Sys.Date(), "week") + days(1),
                                    maxDate = Sys.Date()+180,
                                    firstDay =  1,
@@ -30,23 +29,16 @@ ui <- fluidPage(
                                    placeholder =  c(floor_date(Sys.Date(), "week") + days(1), Sys.Date()+180),
                                    clearButton = T),
 
-  # tooltip hinzufügen
-  tags$script(HTML('
-    $(document).ready(function(){
-      $("#halbjahr").tooltip({title: "Der gewählte Starttag des Halbjahres sollte dem ersten Unterrichtstag in der Klasse entsprechen. Wenn dies z.B. Donnerstag ist, dann sollte bei Turnus auch zuerst Donnerstag eingetragen werden (gefolgt von z.B. Montag).", placement: "top", trigger: "hover", container: "body"});
-    });
-  ')),
-
   # date pickers with only one date
-  shinyWidgets::airDatepickerInput("klassenarbeiten", "Klassenarbeitstermin(e)", multiple = T,
+  shinyWidgets::airDatepickerInput("klassenarbeiten", "4. Klassenarbeitstermin(e)", multiple = T,
                                    firstDay =  1,
                                    disabledDates = c(0,6), minDate = Sys.Date() - 7, maxDate = Sys.Date()+180),
 
   # filename
-  shiny::textInput("filename", "Name der Notentabelle", placeholder = "10a_2024_HJ1"),
+  shiny::textInput("filename", "5. Name der Notentabelle", placeholder = "10a_2024_HJ1"),
 
   # Download button
-  downloadButton("download_btn", "Generiere Tabelle")
+  downloadButton("download_btn", "6. Generiere Tabelle")
 )
 
 # Define server
@@ -128,7 +120,6 @@ server <- function(input, output, session) {
       }
     },
     content = function(file) {
-      print(termine())
       SuS <- as.numeric(input$sus)   # Specify the number SuS
 
       klassenarbeiten <- as.character(input$klassenarbeiten)  # Klassenarbeiten festlegen
