@@ -96,7 +96,13 @@ server <- function(input, output, session) {
       }
 
       # Feiertage und Ferien abrufen
-      ferienintervall <- getHolidays(year(input$halbjahr[1]))
+      if(year(input$halbjahr[1]) != year(input$halbjahr[2])){
+        ferienintervall <- c(getHolidays(year(input$halbjahr[1])),
+                             getHolidays(year(input$halbjahr[2]), pause = 5))
+      } else {
+        ferienintervall <- getHolidays(year(input$halbjahr[1]))
+      }
+
 
       # Sequenz festlegen
       a <- seq(ymd(schulanfang),ymd(schulende), by = '1 week')

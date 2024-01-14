@@ -1,5 +1,6 @@
 
-getHolidays <- function(jahr = lubridate::year(lubridate::today())){
+getHolidays <- function(jahr = lubridate::year(lubridate::today()), pause = 0){
+  Sys.sleep(pause)
   url <- paste0("https://ferien-api.de/api/v1/holidays/NI/", jahr)
   headers <- c("accept" = "application/json")
 
