@@ -16,23 +16,27 @@ ui <- fluidPage(
   titlePanel("Notentabelle"),
 
   # Numeric slider from 1 to 30
-  sliderInput("sus", "SuS", min = 1, max = 30, value = 25),
+  sliderInput("sus", "Wie viele SuS?", min = 1, max = 30, value = 25),
 
   # Selector with numbers 1 to 5
-  selectInput("number_selector", "Turnus (wähle 1-2)", choices = wochentage, selected = wochentage[c(1, 4)], multiple = T),
+  selectInput("number_selector", "Turnus, z.B. jeden Montag (max. 2 Tage)", choices = wochentage, selected = wochentage[c(1, 4)], multiple = T),
 
-  # Date picker with start and end date
+  # Date picker with start and end date. Default für Start nächster Montag
   dateRangeInput("halbjahr", "Halbjahr (Start - Ende)", start = floor_date(Sys.Date(), "week") + days(1), end = Sys.Date()+180, weekstart = 1),
 
+  # tooltip hinzufügen
   tags$script(HTML('
     $(document).ready(function(){
-      $("#halbjahr").tooltip({title: "Wähle den ersten Unterrichtstag. Wochentag sollte mit Turnus übereinstimmen! Z.B., wenn erster Unterrichtstag an einem Donnerstag stattfindet und dann erst wieder am Montag, wähle Turnus: Thursday, Monday und Start: Thursday 11.01.2024", placement: "top", trigger: "hover", container: "body"});
+      $("#halbjahr").tooltip({title: "Der gewählte Starttag des Halbjahres sollte dem ersten Unterrichtstag in der Klasse entsprechen. Wenn dies z.B. Donnerstag ist, dann sollte bei Turnus auch zuerst Donnerstag eingetragen werden (gefolgt von z.B. Montag).", placement: "top", trigger: "hover", container: "body"});
     });
   ')),
 
   # date pickers with only one date
-  shinyWidgets::airDatepickerInput("klassenarbeiten", "Klassenarbeit(en)", multiple = T,
+  shinyWidgets::airDatepickerInput("klassenarbeiten", "Klassenarbeitstermin(e)", multiple = T,
                                    disabledDates = c(0,6), minDate = Sys.Date() - 7, maxDate = Sys.Date()+180),
+
+  # filename
+  shiny::textInput("filename", "Name der Notentabelle", placeholder = "10a_HJ1"),
 
   # Download button
   downloadButton("download_btn", "Generiere Tabelle")
@@ -41,10 +45,14 @@ ui <- fluidPage(
 # Define server
 server <- function(input, output) {
 
-  # Download button logic (you can replace this with your own data)
+  # Download button logic
   output$download_btn <- downloadHandler(
     filename = function() {
-      paste("Notentabelle_", Sys.Date(), ".xlsx", sep = "")
+      if(input$filename == "character(0)"){
+        glue::glue("Notentabelle_{input$filename}.xlsx")
+      } else {
+        glue::glue("Notentabelle_{Sys.Date()}.xlsx")
+      }
     },
     content = function(file) {
       SuS <- as.numeric(input$sus)   # Specify the number SuS
@@ -59,7 +67,7 @@ server <- function(input, output) {
         tage <- 0                                            # ebenfalls 0, wenn keine Angabe
       }
 
-      # consider edgecase where erster später Wochentagtag, zb Donnerstag und nicht Montag
+      # consider edgecase: Schulbeginn an Donnerstag, Turnus aber Montag - Donnerstag. Dann nicht 3 Tage vor, sondern zurück
       if(length(input$number_selector) > 1){
         if(grep(input$number_selector[1], wochentage) > grep(input$number_selector[2], wochentage)) {
           tage <- tage*-1
@@ -75,14 +83,14 @@ server <- function(input, output) {
       a <- seq(ymd(schulanfang),ymd(schulende), by = '1 week')
       b <- seq(ymd(schulanfang)+as.numeric(tage) ,ymd(schulende), by = '1 week')
 
-      # consider edgecase where erster Tag zb Donnerstag: entferne Montage vor dem gewählten Donnerstag
+      # consider edgecase: Schulbeginn an Donnerstag, Turnus aber Montag - Donnerstag. Dann nicht 3 Tage vor, sondern zurück.
+      # Allerdings OHNE den Montag in der ausgewählten Woche -> zufrüh
       zuf <- which(b < a[1])
       if(length(zuf) > 0){
         termine <- unique(c(a,b[-zuf])) |> sort()
       } else {
         termine <- unique(c(a,b)) |> sort()
       }
-
 
       # Feiertage ermitteln
       ausfall <- sapply(termine, function(x) any(x %within% ferienintervall))
@@ -91,7 +99,7 @@ server <- function(input, output) {
       empty <- data.frame(matrix(0, ncol = length(termine), nrow = SuS))
       colnames(empty) <- termine
 
-      # wenn keine Klassenarbeiten gewählt
+      # wenn keine Klassenarbeiten gewählt, mache nichts
       if(length(klassenarbeiten) != "character(0)"){
         klassenarbeitsdaten <- which(colnames(empty) %in% klassenarbeiten)
         colnames(empty)[klassenarbeitsdaten] <- paste("Klausur\n", colnames(empty)[klassenarbeitsdaten])
@@ -107,7 +115,7 @@ server <- function(input, output) {
       empty$muendlich = sprintf(glue::glue('= AVERAGEIFS(F%d:{to}%d, F1:{to}1, "<>*KLAUSUR*", F%d:{to}%d, "<>0")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
       empty$schriftlich = sprintf(glue::glue('= AVERAGEIFS(F%d:{to}%d, F1:{to}1, "*KLAUSUR*", F%d:{to}%d, "<>0")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
 
-      # Datensatz reshufflen
+      # Datensatz neu-anordnen
       full <- empty %>% select(ID, Name, Gesamtnote, muendlich, schriftlich, everything())
 
       # Formelspalten als solche klassifizieren
