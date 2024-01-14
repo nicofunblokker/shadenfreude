@@ -37,8 +37,15 @@ ui <- fluidPage(
   # filename
   shiny::textInput("filename", "5. Name der Notentabelle", placeholder = "10a_2024_HJ1"),
 
+  shinyWidgets::switchInput(
+    inputId = "holiday",
+    label = "6. freie Tage",
+    value = TRUE,
+    labelWidth = "90px"
+  ),
+
   # Download button
-  downloadButton("download_btn", "6. Generiere Tabelle")
+  downloadButton("download_btn", "7. Generiere Tabelle")
 )
 
 # Define server
@@ -152,6 +159,10 @@ server <- function(input, output, session) {
       # Datensatz neu-anordnen
       full <- empty %>% select(ID, Name, Gesamtnote, muendlich, schriftlich, everything()) %>%
         mutate(across(contains("FREI"), ~ ""))
+
+      if(!input$holiday){
+        full <- full %>% select(!contains("FREI"))
+      }
 
       # Formelspalten als solche klassifizieren
       for(i in c(3:5)){
