@@ -18,9 +18,9 @@ ui <- fluidPage(
   # Date picker with start and end date
   dateRangeInput("halbjahr", "Halbjahr (Start - Ende)", start = Sys.Date() - 7, end = Sys.Date()+180),
 
-  # Two date pickers with only one date
-  dateInput("klassenarbeit1", "Klassenarbeit 1", value = Sys.Date()+30),
-  dateInput("klassenarbeit2", "Klassenarbeit 2", value = Sys.Date()+60),
+  # date pickers with only one date
+  shinyWidgets::airDatepickerInput("klassenarbeiten", "Klassenarbeit(en)", multiple = T,
+                                   disabledDates = c(0,6), minDate = Sys.Date() - 7, maxDate = Sys.Date()+180),
 
   # Selector with numbers 1 to 5
   selectInput("number_selector", "Turnus", choices = 0:4, selected = 2),
@@ -41,7 +41,7 @@ server <- function(input, output) {
       SuS <- as.numeric(input$sus)   # Specify the number SuS
       schulanfang <- as.character(input$halbjahr[1])   # Halbjahresintervall festlegen
       schulende <- as.character(input$halbjahr[2])
-      klassenarbeiten <- c(as.character(input$klassenarbeit1), as.character(input$klassenarbeit2))  # Klassenarbeiten festlegen
+      klassenarbeiten <- as.character(input$klassenarbeiten)  # Klassenarbeiten festlegen
       tage <- input$number_selector # wie viele tage zwischen Unterrichtstunden (0 wenn nur 1x pro Woche)
 
       # Feiertage und Ferien abrufen
