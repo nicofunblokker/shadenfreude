@@ -23,7 +23,7 @@ ui <- fluidPage(
   dateInput("klassenarbeit2", "Klassenarbeit 2", value = Sys.Date()+60),
 
   # Selector with numbers 1 to 5
-  selectInput("number_selector", "wann wieder hier", choices = 0:5, selected = 2),
+  selectInput("number_selector", "Turnus", choices = 0:4, selected = 2),
 
   # Download button
   downloadButton("download_btn", "Generiere Tabelle")
@@ -35,7 +35,7 @@ server <- function(input, output) {
   # Download button logic (you can replace this with your own data)
   output$download_btn <- downloadHandler(
     filename = function() {
-      paste("data_", Sys.Date(), ".xlsx", sep = "")
+      paste("Notentabelle_", Sys.Date(), ".xlsx", sep = "")
     },
     content = function(file) {
       SuS <- as.numeric(input$sus)   # Specify the number SuS
@@ -45,8 +45,7 @@ server <- function(input, output) {
       tage <- input$number_selector # wie viele tage zwischen Unterrichtstunden (0 wenn nur 1x pro Woche)
 
       # Feiertage und Ferien abrufen
-
-      ferienintervall <- getHolidays()
+      ferienintervall <- getHolidays(year(input$halbjahr[1]))
 
       # Sequenz festlegen
       a <- seq(ymd(schulanfang),ymd(schulende), by = '1 week')
@@ -66,7 +65,6 @@ server <- function(input, output) {
       to <- tail(c(LETTERS, paste0("A", LETTERS), paste0("B", LETTERS), paste0("C", LETTERS))[6:(length(termine)+7)],1)
 
       # Variablen einführen
-
       empty$ID = 1:SuS
       empty$`Name` = rep("", SuS)
       empty$Gesamtnote = sprintf('=AVERAGEIF(D%d:E%d, "<>0", D%d:E%d)', 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
@@ -83,7 +81,6 @@ server <- function(input, output) {
 
 
       ## Notebook erstellen
-
       wb <- createWorkbook()
       addWorksheet(wb, "Noten")
       writeData(wb, "Noten", x = full)
@@ -110,12 +107,12 @@ server <- function(input, output) {
       }
 
       # notenspiegel
-
-      notenspiegel <- data.frame(Note = 1:6, Anzahl = sprintf("=COUNTIF(Noten!C%d:Noten!C%d; %d)", 2, SuS+1, 1:6))
-      #wb <- createWorkbook()
+      notenspiegel <- data.frame(Note = 1:6, Anzahl = sprintf("=COUNTIF(Noten!C%d:Noten!C%d, %d)", 2, SuS+1, 1:6))
+      class(notenspiegel$Anzahl) <- c(class(notenspiegel$Anzahl), "formula")
       addWorksheet(wb, "Notenspiegel")
       writeData(wb, "Notenspiegel", x = notenspiegel)
 
+      # speichern
       saveWorkbook(wb, file, overwrite = TRUE)
     }
   )
