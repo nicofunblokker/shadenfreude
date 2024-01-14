@@ -91,7 +91,7 @@ server <- function(input, output, session) {
 
     # Sequenz festlegen
     a <- seq(ymd(schulanfang),ymd(schulende), by = '1 week')
-    b <- seq(ymd(schulanfang)+as.numeric(tage) ,ymd(schulende), by = '1 week')
+    b <- seq(ymd(schulanfang)+as.numeric(tage), ymd(schulende), by = '1 week')
 
     # consider edgecase: Schulbeginn an Donnerstag, Turnus aber Montag - Donnerstag. Dann nicht 3 Tage vor, sondern zurück.
     # Allerdings OHNE den Montag in der ausgewählten Woche -> zufrüh
@@ -121,9 +121,7 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       SuS <- as.numeric(input$sus)   # Specify the number SuS
-
       klassenarbeiten <- as.character(input$klassenarbeiten)  # Klassenarbeiten festlegen
-
 
       # datensatz kreieren
       empty <- data.frame(matrix(0, ncol = length(termine()), nrow = SuS))
@@ -135,6 +133,12 @@ server <- function(input, output, session) {
         colnames(empty)[klassenarbeitsdaten] <- paste("Klausur\n", colnames(empty)[klassenarbeitsdaten])
       }
 
+
+      if(any(colnames(empty) %in% termine()[ausfall()])){
+        frei <- which(colnames(empty) %in% termine()[ausfall()])
+        colnames(empty)[frei] <- paste("FREI", colnames(empty)[frei])
+      }
+
       # Letzte Spalte
       to <- tail(c(LETTERS, paste0("A", LETTERS), paste0("B", LETTERS), paste0("C", LETTERS))[6:(length(termine())+7)],1)
 
@@ -142,11 +146,12 @@ server <- function(input, output, session) {
       empty$ID = 1:SuS
       empty$`Name` = rep("", SuS)
       empty$Gesamtnote = sprintf('=AVERAGEIF(D%d:E%d, "<>0", D%d:E%d)', 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
-      empty$muendlich = sprintf(glue::glue('= AVERAGEIFS(F%d:{to}%d, F1:{to}1, "<>*KLAUSUR*", F%d:{to}%d, "<>0")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
+      empty$muendlich = sprintf(glue::glue('= AVERAGEIFS(F%d:{to}%d, F1:{to}1, "<>*KLAUSUR*", F1:{to}1, "<>*FREI*", F%d:{to}%d, "<>0")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
       empty$schriftlich = sprintf(glue::glue('= AVERAGEIFS(F%d:{to}%d, F1:{to}1, "*KLAUSUR*", F%d:{to}%d, "<>0")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
 
       # Datensatz neu-anordnen
-      full <- empty %>% select(ID, Name, Gesamtnote, muendlich, schriftlich, everything())
+      full <- empty %>% select(ID, Name, Gesamtnote, muendlich, schriftlich, everything()) %>%
+        mutate(across(contains("FREI"), ~ ""))
 
       # Formelspalten als solche klassifizieren
       for(i in c(3:5)){
@@ -167,10 +172,10 @@ server <- function(input, output, session) {
       conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1:(SuS+1), style = posStyle, rule = "",
                             type = "contains")
 
-      idx <- which(colnames(full) %in% termine()[ausfall()])
+      idx <- which(grepl("FREI", colnames(full)))
       for(i in idx){
-        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1:(SuS+1), style = neutralStyle, rule = "",
-                              type = "contains")
+        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1:(SuS+1), style = neutralStyle, rule = "=TRUE",
+                              type = "expression")
       }
 
       idx2 <- which(colnames(full) %in% colnames(empty)[klassenarbeitsdaten])
