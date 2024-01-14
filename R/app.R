@@ -39,10 +39,11 @@ ui <- fluidPage(
 
   # date pickers with only one date
   shinyWidgets::airDatepickerInput("klassenarbeiten", "Klassenarbeitstermin(e)", multiple = T,
+                                   firstDay =  1,
                                    disabledDates = c(0,6), minDate = Sys.Date() - 7, maxDate = Sys.Date()+180),
 
   # filename
-  shiny::textInput("filename", "Name der Notentabelle", placeholder = "10a_HJ1"),
+  shiny::textInput("filename", "Name der Notentabelle", placeholder = "10a_2024_HJ1"),
 
   # Download button
   downloadButton("download_btn", "Generiere Tabelle")
@@ -59,7 +60,8 @@ server <- function(input, output, session) {
       minDate = floor_date(Sys.Date(), "week") + days(which(wochentage == input$number_selector[1]))))
 
     shinyWidgets::updateAirDateInput(session = session, "klassenarbeiten", options = list(
-      disabledDaysOfWeek = c(0,6,disabled_days)))
+      disabledDaysOfWeek = c(0,6,disabled_days),
+      minDate = floor_date(Sys.Date(), "week") + days(which(wochentage == input$number_selector[1]))))
   })
 
   # Download button logic
