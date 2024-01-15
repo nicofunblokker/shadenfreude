@@ -15,6 +15,11 @@ wochentage <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 ui <- fluidPage(
   titlePanel("Notentabelle"),
 
+  #br(),
+  HTML('Schritte bitte nacheinander ausfüllen. Im Zweifel neuladen und wieder von oben anfangen.'),
+  br(),
+  br(),
+
   # Numeric slider from 1 to 30
   sliderInput("sus", "1. Wie viele SuS?", min = 1, max = 30, value = 25),
 
@@ -34,6 +39,7 @@ ui <- fluidPage(
   # date pickers with only one date
   shinyWidgets::airDatepickerInput("klassenarbeiten", "4. Klassenarbeitstermin(e)", multiple = T,
                                    firstDay =  1,
+                                   clearButton = T,
                                    disabledDates = c(0,6), minDate = Sys.Date() - 7, maxDate = Sys.Date()+180),
 
   # filename
