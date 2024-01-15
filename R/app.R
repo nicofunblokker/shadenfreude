@@ -53,7 +53,10 @@ ui <- fluidPage(
   ),
 
   # Download button
-  downloadButton("download_btn", "7. Generiere Tabelle")
+  downloadButton("download_btn", "7. Generiere Tabelle"),
+
+  hr(),
+  HTML("Referenz: <a href='https://ferien-api.de/'>Feriendaten</a> und <a href='https://feiertage-api.de/'>Feiertagsdaten</a>")
 )
 
 # Define server
