@@ -40,7 +40,7 @@ ui <- fluidPage(
   shinyWidgets::switchInput(
     inputId = "holiday",
     label = "6. freie Tage",
-    value = TRUE,
+    value = FALSE,
     labelWidth = "90px"
   ),
 
