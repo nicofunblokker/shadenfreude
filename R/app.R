@@ -160,8 +160,8 @@ server <- function(input, output, session) {
       negStyle <- createStyle(bgFill = "#FFC7CE")
 
       idx0 <- which(colnames(full) %in% termine())
-      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1:(SuS+1), style = posStyle, rule = "",
-                            type = "contains")
+      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1:(SuS+1), style = posStyle, rule = "<7",
+                            type = "expression")
 
       idx <- which(grepl("FREI", colnames(full)))
       for(i in idx){
@@ -171,8 +171,8 @@ server <- function(input, output, session) {
 
       idx2 <- which(colnames(full) %in% colnames(empty)[klassenarbeitsdaten])
       for(i in idx2){
-        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1:(SuS+1), style = negStyle, rule = "",
-                              type = "contains")
+        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1:(SuS+1), style = negStyle, rule = "<7",
+                              type = "expression")
       }
 
       # notenspiegel
