@@ -162,17 +162,23 @@ server <- function(input, output, session) {
       idx0 <- which(colnames(full) %in% termine())
       conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1:(SuS+1), style = posStyle, rule = "<7",
                             type = "expression")
+      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1:(SuS+1), style = posStyle, rule = "-",
+                            type = "contains")
 
       idx <- which(grepl("FREI", colnames(full)))
       for(i in idx){
         conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1:(SuS+1), style = neutralStyle, rule = "=TRUE",
                               type = "expression")
+        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1:(SuS+1), style = neutralStyle, rule = "-",
+                              type = "contains")
       }
 
       idx2 <- which(colnames(full) %in% colnames(empty)[klassenarbeitsdaten])
       for(i in idx2){
         conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1:(SuS+1), style = negStyle, rule = "<7",
                               type = "expression")
+        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1:(SuS+1), style = negStyle, rule = "-",
+                              type = "contains")
       }
 
       # notenspiegel
