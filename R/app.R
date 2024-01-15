@@ -51,6 +51,8 @@ ui <- fluidPage(
 # Define server
 server <- function(input, output, session) {
 
+
+  # update datepicker remove freie tage from klassenarbeiten und only allow ausgewählte wochentage
   observe({
     req(input$number_selector)
     disabled_days <- which(!wochentage %in% input$number_selector)
