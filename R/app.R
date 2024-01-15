@@ -53,8 +53,7 @@ ui <- fluidPage(
 # Define server
 server <- function(input, output, session) {
 
-
-  # update datepicker remove freie tage from klassenarbeiten und only allow ausgewählte wochentage
+  # update datepicker only allow ausgewählte wochentage
   observe({
     req(input$number_selector)
     disabled_days <- which(!wochentage %in% input$number_selector)
@@ -62,11 +61,16 @@ server <- function(input, output, session) {
       disabledDaysOfWeek = c(0,6,disabled_days),
       update_on = "close",
       minDate = floor_date(Sys.Date(), "week") + days(which(wochentage == input$number_selector[1]))))
+  })
 
+  # remove freie tage zusätzlich from klassenarbeiten grenze Zeitbereich auf ausgewähltes Halbjahr ein
+  observeEvent(input$halbjahr[2], {
+    req(input$number_selector, input$halbjahr[2])
+    disabled_days <- which(!wochentage %in% input$number_selector)
     shinyWidgets::updateAirDateInput(session = session, "klassenarbeiten", options = list(
       disabledDaysOfWeek = c(0,6,disabled_days),
       disabledDates = termine()[ausfall()],
-      minDate = floor_date(Sys.Date(), "week") + days(which(wochentage == input$number_selector[1]))))
+      minDate = input$halbjahr[1], maxDate = input$halbjahr[2]))
   })
 
   termine <- reactiveVal(0)
