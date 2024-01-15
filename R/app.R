@@ -7,6 +7,7 @@ library(openxlsx)
 library(lubridate)
 library(dplyr)
 source("./R/getHolidays.R")
+source("./R/turnus.R")
 
 wochentage <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 
@@ -18,7 +19,7 @@ ui <- fluidPage(
   sliderInput("sus", "1. Wie viele SuS?", min = 1, max = 30, value = 25),
 
   # Selector with numbers 1 to 5
-  selectizeInput("number_selector", "2. Turnus, z.B. jeden Montag (max. 2 Tage)", choices = wochentage, selected = "", multiple = T, options = list(maxItems = 2, placeholder ="Monday")),
+  selectizeInput("number_selector", "2. Turnus, z.B. jeden Montag", choices = wochentage, selected = "", multiple = T, options = list(maxItems = 5, placeholder ="Monday")),
 
   # Date picker with start and end date. Default für Start nächster Montag
   shinyWidgets::airDatepickerInput("halbjahr", "3. Halbjahr (Start - Ende)",
@@ -26,6 +27,7 @@ ui <- fluidPage(
                                    maxDate = Sys.Date()+180,
                                    firstDay =  1,
                                    range = T,
+                                   update_on = "close",
                                    placeholder =  c(floor_date(Sys.Date(), "week") + days(1), Sys.Date()+180),
                                    clearButton = T),
 
@@ -58,6 +60,7 @@ server <- function(input, output, session) {
     disabled_days <- which(!wochentage %in% input$number_selector)
     shinyWidgets::updateAirDateInput(session = session, "halbjahr", options = list(
       disabledDaysOfWeek = c(0,6,disabled_days),
+      update_on = "close",
       minDate = floor_date(Sys.Date(), "week") + days(which(wochentage == input$number_selector[1]))))
 
     shinyWidgets::updateAirDateInput(session = session, "klassenarbeiten", options = list(
@@ -70,7 +73,7 @@ server <- function(input, output, session) {
   ausfall <- reactiveVal(0)
 
   observe({
-    req(input$halbjahr[2])
+    req(input$halbjahr[2], input$number_selector)
     schulanfang <- as.character(input$halbjahr[1])   # Halbjahresintervall festlegen
     schulende <- as.character(input$halbjahr[2])
 
@@ -82,34 +85,9 @@ server <- function(input, output, session) {
       ferienintervall <- getHolidays(year(input$halbjahr[1]))
     }
 
-    if(!is.null(input$number_selector)){
-      tageidx <- which(wochentage %in% input$number_selector) # wie viele tage zwischen Unterrichtstunden (0 wenn nur 1x pro Woche)
-      tage <- max(tageidx) - min(tageidx)
-    } else {
-      tage <- 0                                            # ebenfalls 0, wenn keine Angabe
-    }
+    # turnusgemäße Termine ermitteln
+    termine <- turnus2dates(input$number_selector, schulanfang = as.character(input$halbjahr[1]), schulende = as.character(input$halbjahr[2]))
 
-    # consider edgecase: Schulbeginn an Donnerstag, Turnus aber Montag - Donnerstag. Dann nicht 3 Tage vor, sondern zurück
-    if(length(input$number_selector) > 1){
-      if(grep(input$number_selector[1], wochentage) > grep(input$number_selector[2], wochentage)) {
-        tage <- tage*-1
-      } else {
-        tage
-      }
-    }
-
-    # Sequenz festlegen
-    a <- seq(ymd(schulanfang),ymd(schulende), by = '1 week')
-    b <- seq(ymd(schulanfang)+as.numeric(tage), ymd(schulende), by = '1 week')
-
-    # consider edgecase: Schulbeginn an Donnerstag, Turnus aber Montag - Donnerstag. Dann nicht 3 Tage vor, sondern zurück.
-    # Allerdings OHNE den Montag in der ausgewählten Woche -> zufrüh
-    zuf <- which(b < a[1])
-    if(length(zuf) > 0){
-      termine <- unique(c(a,b[-zuf])) |> sort()
-    } else {
-      termine <- unique(c(a,b)) |> sort()
-    }
 
     # Feiertage ermitteln
     ausfall <- sapply(termine, function(x) any(x %within% ferienintervall))
