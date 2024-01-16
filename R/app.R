@@ -121,7 +121,7 @@ server <- function(input, output, session) {
 
     # reactive values auffüllen
     ausfall(ausfall)
-    termine(termine)
+    termine(format(termine, "%a %d-%m-%y"))
   })
 
   # Download button logic
@@ -136,13 +136,13 @@ server <- function(input, output, session) {
     content = function(file) {
       SuS <- as.numeric(input$sus)   # Specify the number SuS
       klassenarbeiten <- as.character(input$klassenarbeiten)  # Klassenarbeiten festlegen
-
       # datensatz kreieren
       empty <- data.frame(matrix(0, ncol = length(termine()), nrow = SuS))
       colnames(empty) <- termine()
 
       # wenn keine Klassenarbeiten gewählt, mache nichts
       if(length(klassenarbeiten) != "character(0)"){
+        klassenarbeiten <- format(ymd(klassenarbeiten), "%a %d-%m-%y")
         klassenarbeitsdaten <- which(colnames(empty) %in% klassenarbeiten)
         colnames(empty)[klassenarbeitsdaten] <- paste("Klausur\n", colnames(empty)[klassenarbeitsdaten])
       }
