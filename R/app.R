@@ -18,7 +18,7 @@ ui <- fluidPage(
   titlePanel("Notentabelle"),
 
   #br(),
-  HTML('Schritte bitte nacheinander ausfüllen. Im Zweifel neuladen und wieder von oben anfangen.<br>Nach Eingabe des Zeitraums etwa 5-15 Sekunden warten.'),
+  HTML('Schritte bitte nacheinander ausfüllen. Im Zweifel neuladen und wieder von oben anfangen.<br>Nach Eingabe des Halbjahreszeitraums etwa 5-15 Sekunden warten.'),
   br(),
   br(),
 
@@ -35,14 +35,14 @@ ui <- fluidPage(
                                    firstDay =  1,
                                    range = T,
                                    update_on = "close",
-                                   placeholder =  c(floor_date(Sys.Date(), "week") + days(1), Sys.Date()+180),
+                                   placeholder =  c(floor_date(Sys.Date(), "week") + days(1), Sys.Date()+182),
                                    clearButton = T),
 
   # date pickers with only one date
   shinyWidgets::airDatepickerInput("klassenarbeiten", "4. Klassenarbeitstermin(e)", multiple = T,
                                    firstDay =  1,
                                    clearButton = T,
-                                   disabledDates = c(0,6), minDate = Sys.Date() - 7, maxDate = Sys.Date()+180),
+                                   disabledDates = c(0,6), minDate = Sys.Date() - 7, maxDate = Sys.Date()+182),
 
   # filename
   shiny::textInput("filename", "5. Name der Notentabelle", placeholder = "10a_2024_HJ1"),
@@ -74,7 +74,7 @@ server <- function(input, output, session) {
     shinyWidgets::updateAirDateInput(session = session, "halbjahr", options = list(
       disabledDaysOfWeek = c(0,6,disabled_days),
       update_on = "close",
-      minDate = floor_date(Sys.Date(), "week") + days(which(wochentage == input$number_selector[1]))))
+      minDate = floor_date(Sys.Date(), "week") - 7*8 + days(which(wochentage == input$number_selector[1]))))
   })
 
   # remove freie tage zusätzlich from klassenarbeiten grenze Zeitbereich auf ausgewähltes Halbjahr ein
