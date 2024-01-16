@@ -6,8 +6,8 @@ library(shiny)
 library(openxlsx)
 library(lubridate)
 library(dplyr)
-source("./R/getHolidays.R")
-source("./R/turnus.R")
+source("getHolidays.R")
+source("turnus.R")
 
 wochentage <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 
