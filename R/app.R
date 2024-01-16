@@ -6,6 +6,7 @@ library(shiny)
 library(openxlsx)
 library(lubridate)
 library(dplyr)
+library(shinyjs)
 source("getHolidays.R")
 source("turnus.R")
 
@@ -13,10 +14,11 @@ wochentage <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 
 # Define UI
 ui <- fluidPage(
+  shinyjs::useShinyjs(),
   titlePanel("Notentabelle"),
 
   #br(),
-  HTML('Schritte bitte nacheinander ausfüllen. Im Zweifel neuladen und wieder von oben anfangen.'),
+  HTML('Schritte bitte nacheinander ausfüllen. Im Zweifel neuladen und wieder von oben anfangen.<br>Nach Eingabe des Zeitraums etwa 5-15 Sekunden warten.'),
   br(),
   br(),
 
@@ -65,6 +67,9 @@ server <- function(input, output, session) {
   # update datepicker only allow ausgewählte wochentage
   observe({
     req(input$number_selector)
+    if(is.null(input$halbjahr[2])){
+      shinyjs::enable("number_selector")
+    }
     disabled_days <- which(!wochentage %in% input$number_selector)
     shinyWidgets::updateAirDateInput(session = session, "halbjahr", options = list(
       disabledDaysOfWeek = c(0,6,disabled_days),
@@ -75,6 +80,7 @@ server <- function(input, output, session) {
   # remove freie tage zusätzlich from klassenarbeiten grenze Zeitbereich auf ausgewähltes Halbjahr ein
   observeEvent(input$halbjahr[2], {
     req(input$number_selector, input$halbjahr[2])
+    shinyjs::disable("number_selector")
     disabled_days <- which(!wochentage %in% input$number_selector)
     shinyWidgets::updateAirDateInput(session = session, "klassenarbeiten", options = list(
       disabledDaysOfWeek = c(0,6,disabled_days),
@@ -92,10 +98,18 @@ server <- function(input, output, session) {
 
     # Feiertage und Ferien abrufen
     if(year(input$halbjahr[1]) != year(input$halbjahr[2])){
+      withProgress(message = 'Mache API-Abfragen', value = 0.6, {
+        disable("klassenarbeiten")
       ferienintervall <- c(getHolidays(year(input$halbjahr[1])),
-                           getHolidays(year(input$halbjahr[2]), pause = 5))
+                           getHolidays(year(input$halbjahr[2]), pause = 10))
+        enable("klassenarbeiten")
+      })
     } else {
+      withProgress(message = 'Mache API-Abfrage', value = 0.6, {
+        disable("klassenarbeiten")
       ferienintervall <- getHolidays(year(input$halbjahr[1]))
+        enable("klassenarbeiten")
+      })
     }
 
     # turnusgemäße Termine ermitteln

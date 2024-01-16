@@ -1,5 +1,5 @@
 
-getHolidays <- function(jahr = lubridate::year(lubridate::today()), pause = 0){
+getHolidays <- function(jahr = lubridate::year(lubridate::today()), pause = 5){
   Sys.sleep(pause)
 
   # ferien
