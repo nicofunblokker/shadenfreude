@@ -140,7 +140,7 @@ server <- function(input, output, session) {
       }
 
       # Letzte Spalte
-      to <- tail(c(LETTERS, paste0("A", LETTERS), paste0("B", LETTERS), paste0("C", LETTERS))[6:(length(termine())+7)],1)
+      to <- tail(as.vector(sapply(c("", LETTERS[1:10]), \(x) paste0(x, LETTERS)))[6:(length(termine())+7)],1)
 
       # Variablen einführen
       empty$ID = 1:SuS
