@@ -18,7 +18,7 @@ ui <- fluidPage(
   titlePanel("Notentabelle"),
 
   #br(),
-  HTML('Schritte bitte nacheinander ausfüllen. Im Zweifel neuladen und wieder von oben anfangen.<br>Nach Eingabe des Halbjahreszeitraums etwa 5-15 Sekunden warten.'),
+  HTML('Schritte bitte nacheinander ausfüllen. Im Zweifel neuladen und wieder von oben anfangen.<br>Erster Turnus<i>wochentag</i> <b>muss</b> mit Start<i>wochentag</i> übereinstimmen.<br>Nach Eingabe des Halbjahreszeitraums etwa 5-15 Sekunden warten.'),
   br(),
   br(),
 
@@ -77,37 +77,30 @@ server <- function(input, output, session) {
       minDate = floor_date(Sys.Date(), "week") - 7*8 + days(which(wochentage == input$number_selector[1]))))
   })
 
-  # remove freie tage zusätzlich from klassenarbeiten grenze Zeitbereich auf ausgewähltes Halbjahr ein
-  observeEvent(input$halbjahr[2], {
-    req(input$number_selector, input$halbjahr[2])
-    shinyjs::disable("number_selector")
-    disabled_days <- which(!wochentage %in% input$number_selector)
-    shinyWidgets::updateAirDateInput(session = session, "klassenarbeiten", options = list(
-      disabledDaysOfWeek = c(0,6,disabled_days),
-      disabledDates = termine()[ausfall()],
-      minDate = input$halbjahr[1], maxDate = input$halbjahr[2]))
-  })
 
   termine <- reactiveVal(0)
   ausfall <- reactiveVal(0)
 
-  observe({
-    req(input$halbjahr[2], input$number_selector)
-    schulanfang <- as.character(input$halbjahr[1])   # Halbjahresintervall festlegen
+  # remove freie tage zusätzlich from klassenarbeiten grenze Zeitbereich auf ausgewähltes Halbjahr ein
+  observeEvent(input$halbjahr[2], {
+    req(input$number_selector, input$halbjahr[2])
+
+    # Halbjahresintervall festlegen
+    schulanfang <- as.character(input$halbjahr[1])
     schulende <- as.character(input$halbjahr[2])
 
     # Feiertage und Ferien abrufen
     if(year(input$halbjahr[1]) != year(input$halbjahr[2])){
-      withProgress(message = 'Mache API-Abfragen', value = 0.6, {
+      withProgress(message = 'Mache API-Abfragen', value = 0.7, {
         disable("klassenarbeiten")
-      ferienintervall <- c(getHolidays(year(input$halbjahr[1])),
-                           getHolidays(year(input$halbjahr[2]), pause = 10))
+        ferienintervall <- c(getHolidays(year(input$halbjahr[1])),
+                             getHolidays(year(input$halbjahr[2]), pause = 10))
         enable("klassenarbeiten")
       })
     } else {
-      withProgress(message = 'Mache API-Abfrage', value = 0.6, {
+      withProgress(message = 'Mache API-Abfrage', value = 0.7, {
         disable("klassenarbeiten")
-      ferienintervall <- getHolidays(year(input$halbjahr[1]))
+        ferienintervall <- getHolidays(year(input$halbjahr[1]))
         enable("klassenarbeiten")
       })
     }
@@ -115,13 +108,20 @@ server <- function(input, output, session) {
     # turnusgemäße Termine ermitteln
     termine <- turnus2dates(input$number_selector, schulanfang = as.character(input$halbjahr[1]), schulende = as.character(input$halbjahr[2]))
 
-
     # Feiertage ermitteln
     ausfall <- sapply(termine, function(x) any(x %within% ferienintervall))
 
     # reactive values auffüllen
     ausfall(ausfall)
     termine(format(termine, "%a %d-%m-%y"))
+
+    # update slider
+    shinyjs::disable("number_selector")
+    disabled_days <- which(!wochentage %in% input$number_selector)
+    shinyWidgets::updateAirDateInput(session = session, "klassenarbeiten", options = list(
+      disabledDaysOfWeek = c(0,6,disabled_days),
+      disabledDates = format(dmy(termine()[ausfall()]), "%Y-%m-%d"),
+      minDate = input$halbjahr[1], maxDate = input$halbjahr[2]))
   })
 
   # Download button logic
@@ -146,7 +146,6 @@ server <- function(input, output, session) {
         klassenarbeitsdaten <- which(colnames(empty) %in% klassenarbeiten)
         colnames(empty)[klassenarbeitsdaten] <- paste("Klausur\n", colnames(empty)[klassenarbeitsdaten])
       }
-
 
       if(any(colnames(empty) %in% termine()[ausfall()])){
         frei <- which(colnames(empty) %in% termine()[ausfall()])
