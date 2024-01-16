@@ -84,7 +84,7 @@ server <- function(input, output, session) {
   # remove freie tage zusätzlich from klassenarbeiten grenze Zeitbereich auf ausgewähltes Halbjahr ein
   observeEvent(input$halbjahr[2], {
     req(input$number_selector, input$halbjahr[2])
-
+    shinyjs::disable("number_selector")
     # Halbjahresintervall festlegen
     schulanfang <- as.character(input$halbjahr[1])
     schulende <- as.character(input$halbjahr[2])
@@ -116,7 +116,6 @@ server <- function(input, output, session) {
     termine(format(termine, "%a %d-%m-%y"))
 
     # update slider
-    shinyjs::disable("number_selector")
     disabled_days <- which(!wochentage %in% input$number_selector)
     shinyWidgets::updateAirDateInput(session = session, "klassenarbeiten", options = list(
       disabledDaysOfWeek = c(0,6,disabled_days),
