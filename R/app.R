@@ -17,8 +17,7 @@ ui <- fluidPage(
   shinyjs::useShinyjs(),
   titlePanel("Notentabelle"),
 
-  #br(),
-  HTML('Schritte bitte nacheinander ausfüllen. Im Zweifel neuladen und wieder von oben anfangen.<br>Erster Turnus<i>wochentag</i> <b>muss</b> mit Start<i>wochentag</i> übereinstimmen.<br>Nach Eingabe des Halbjahreszeitraums etwa 5-15 Sekunden warten.'),
+  HTML('Schritte bitte nacheinander ausfüllen. Im Zweifel neuladen und wieder von oben anfangen.<br>Erster Turnus<i>wochentag</i> sollte mit Start<i>wochentag</i> übereinstimmen.<br>Nach Eingabe des Halbjahreszeitraums etwa 5-15 Sekunden warten.'),
   br(),
   br(),
 
@@ -64,12 +63,17 @@ ui <- fluidPage(
 # Define server
 server <- function(input, output, session) {
 
-  # update datepicker only allow ausgewählte wochentage
+  # disable turnus-selector, wenn halbjahr nicht gesetzt
   observe({
     req(input$number_selector)
     if(is.null(input$halbjahr[2])){
       shinyjs::enable("number_selector")
     }
+  })
+
+  # update datepicker only allow ausgewählte wochentage
+  observeEvent(input$number_selector ,{
+    req(input$number_selector)
     disabled_days <- which(!wochentage %in% input$number_selector)
     shinyWidgets::updateAirDateInput(session = session, "halbjahr", options = list(
       disabledDaysOfWeek = c(0,6,disabled_days),
@@ -77,36 +81,57 @@ server <- function(input, output, session) {
       minDate = floor_date(Sys.Date(), "week") - 7*8 + days(which(wochentage == input$number_selector[1]))))
   })
 
-
+  # reactive Values setzen
   termine <- reactiveVal(0)
   ausfall <- reactiveVal(0)
+  api <- reactiveVal(0)           # api results zwischenspeichern
+  halbjahrend <- reactiveVal(0)   # alte Einträge zum HJ wieder verwenden, wenn HJ-Zeitraum nachträglich verkleinert werden
+  halbjahranf <- reactiveVal(0)
 
   # remove freie tage zusätzlich from klassenarbeiten grenze Zeitbereich auf ausgewähltes Halbjahr ein
   observeEvent(input$halbjahr[2], {
     req(input$number_selector, input$halbjahr[2])
     shinyjs::disable("number_selector")
-    # Halbjahresintervall festlegen
-    schulanfang <- as.character(input$halbjahr[1])
-    schulende <- as.character(input$halbjahr[2])
 
-    # Feiertage und Ferien abrufen
-    if(year(input$halbjahr[1]) != year(input$halbjahr[2])){
-      withProgress(message = 'Mache API-Abfragen', value = 0.7, {
-        disable("klassenarbeiten")
-        ferienintervall <- c(getHolidays(year(input$halbjahr[1])),
-                             getHolidays(year(input$halbjahr[2]), pause = 10))
-        enable("klassenarbeiten")
-      })
+  # wenn ausgewählter Wochentag nicht dem ersten Turnustag entspricht, wird er automatisch angepasst
+    if(input$number_selector[1] != weekdays(ymd(input$halbjahr[1]))){
+      ersterTurnustag <- which(input$number_selector[1] == wochentage)
+      schulanfangneu <- lubridate::floor_date(ymd(input$halbjahr[1]), "week") + days(ersterTurnustag)
+      shinyWidgets::updateAirDateInput(session = session, "halbjahr",value = c(schulanfangneu, input$halbjahr[2]))
+      shinyjs::alert(glue::glue("Erster Turnuswochentag und erster Unterrichtstag stimmen nicht überein, setze nächsten {input$number_selector[1]} aus der Woche als Starttag ({schulanfangneu})."))
     } else {
-      withProgress(message = 'Mache API-Abfrage', value = 0.7, {
-        disable("klassenarbeiten")
-        ferienintervall <- getHolidays(year(input$halbjahr[1]))
-        enable("klassenarbeiten")
-      })
+      schulanfangneu <- input$halbjahr[1]
+    }
+
+    # Feiertage und Ferien abrufen (nur wenn dies nicht bereits geschehen)
+    if(api()[1] == 0 | year(halbjahrend()) < year(input$halbjahr[2]) | year(halbjahranf()) > year(input$halbjahr[1])){
+      if(year(input$halbjahr[1]) != year(input$halbjahr[2])){
+        withProgress(message = 'Mache API-Abfragen', value = 0.7, {
+          disable("klassenarbeiten")
+          ferienintervall <- c(getHolidays(year(input$halbjahr[1])),
+                               getHolidays(year(input$halbjahr[2]), pause = 10))
+          api(ferienintervall)
+          halbjahrend(input$halbjahr[2])
+          halbjahranf(input$halbjahr[1])
+          enable("klassenarbeiten")
+        })
+      } else {
+        withProgress(message = 'Mache API-Abfrage', value = 0.7, {
+          print("fire1")
+          disable("klassenarbeiten")
+          ferienintervall <- getHolidays(year(input$halbjahr[1]))
+          api(ferienintervall)
+          halbjahrend(input$halbjahr[2])
+          halbjahranf(input$halbjahr[1])
+          enable("klassenarbeiten")
+        })
+      }
+    } else {
+      ferienintervall <- api()    # sonst verwende bereits geladene Termine
     }
 
     # turnusgemäße Termine ermitteln
-    termine <- turnus2dates(input$number_selector, schulanfang = as.character(input$halbjahr[1]), schulende = as.character(input$halbjahr[2]))
+    termine <- turnus2dates(input$number_selector, schulanfang = as.character(schulanfangneu), schulende = as.character(input$halbjahr[2]))
 
     # Feiertage ermitteln
     ausfall <- sapply(termine, function(x) any(x %within% ferienintervall))
@@ -120,7 +145,7 @@ server <- function(input, output, session) {
     shinyWidgets::updateAirDateInput(session = session, "klassenarbeiten", options = list(
       disabledDaysOfWeek = c(0,6,disabled_days),
       disabledDates = format(dmy(termine()[ausfall()]), "%Y-%m-%d"),
-      minDate = input$halbjahr[1], maxDate = input$halbjahr[2]))
+      minDate = schulanfangneu, maxDate = input$halbjahr[2]))
   })
 
   # Download button logic
@@ -178,6 +203,7 @@ server <- function(input, output, session) {
       wb <- createWorkbook()
       addWorksheet(wb, "Noten")
       writeData(wb, "Noten", x = full)
+      setColWidths(wb, "Noten", cols = 6:ncol(full), widths = "auto")
 
       # Style festlegen
       neutralStyle <- createStyle(bgFill = "grey")
@@ -211,7 +237,6 @@ server <- function(input, output, session) {
       class(notenspiegel$Anzahl) <- c(class(notenspiegel$Anzahl), "formula")
       addWorksheet(wb, "Notenspiegel")
       writeData(wb, "Notenspiegel", x = notenspiegel)
-
       # speichern
       saveWorkbook(wb, file, overwrite = TRUE)
     }
