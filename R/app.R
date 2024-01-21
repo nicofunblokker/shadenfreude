@@ -106,21 +106,21 @@ server <- function(input, output, session) {
     # Feiertage und Ferien abrufen (nur wenn dies nicht bereits geschehen)
     if(api()[1] == 0 || year(halbjahrend()) < year(input$halbjahr[2]) || year(halbjahranf()) > year(input$halbjahr[1])){
       if(year(input$halbjahr[1]) != year(input$halbjahr[2])){
-        withProgress(message = 'Mache API-Abfragen', value = 0.7, {
+        withProgress(message = 'Mache API-Abfragen', value = 0.0, {
           disable("klassenarbeiten")
-          ferienintervall <- c(getHolidays_schule(pause = 5),
-                               getHolidays_feiertag(year(input$halbjahr[1]), pause = 1),
-                               getHolidays_feiertag(year(input$halbjahr[2]), pause = 5))
+          ferienintervall <- c(getHolidays_schule(pause = 5, progress = .333),
+                               getHolidays_feiertag(year(input$halbjahr[1]), pause = 1, progress = .333),
+                               getHolidays_feiertag(year(input$halbjahr[2]), pause = 5, progress = .333))
           api(ferienintervall)
           halbjahrend(input$halbjahr[2])
           halbjahranf(input$halbjahr[1])
           enable("klassenarbeiten")
         })
       } else {
-        withProgress(message = 'Mache API-Abfrage', value = 0.7, {
+        withProgress(message = 'Mache API-Abfrage', value = 0.0, {
           disable("klassenarbeiten")
-          ferienintervall <- c(getHolidays_schule(pause = 5),
-                               getHolidays_feiertag(year(input$halbjahr[1]), pause = 1))
+          ferienintervall <- c(getHolidays_schule(pause = 5, progress = .5),
+                               getHolidays_feiertag(year(input$halbjahr[1]), pause = 1, progress = .5))
           api(ferienintervall)
           halbjahrend(input$halbjahr[2])
           halbjahranf(input$halbjahr[1])

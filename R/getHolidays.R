@@ -1,5 +1,6 @@
 # ferien
-getHolidays_schule <- function(pause = 5){
+getHolidays_schule <- function(pause = 5, progress){
+  incProgress(amount = progress)
   Sys.sleep(pause)
 
   #url <- paste0("https://ferien-api.de/api/v1/holidays/NI/", jahr) # bei Jahresübergängen fehlen ggfs. Daten
@@ -22,9 +23,9 @@ getHolidays_schule <- function(pause = 5){
 
 
 # feiertage
-getHolidays_feiertag <- function(jahr = lubridate::year(lubridate::today()), pause = 5){
+getHolidays_feiertag <- function(jahr = lubridate::year(lubridate::today()), pause = 5, progress){
   Sys.sleep(pause)
-
+  incProgress(amount = progress)
   url <- paste0("https://feiertage-api.de/api/?jahr=", jahr, "&nur_land=NI")
   headers <- c("accept" = "application/json")
 
