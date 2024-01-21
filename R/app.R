@@ -98,7 +98,7 @@ server <- function(input, output, session) {
       ersterTurnustag <- which(input$number_selector[1] == wochentage)
       schulanfangneu <- lubridate::floor_date(ymd(input$halbjahr[1]), "week") + days(ersterTurnustag)
       shinyWidgets::updateAirDateInput(session = session, "halbjahr",value = c(schulanfangneu, input$halbjahr[2]))
-      shinyjs::alert(glue::glue("Erster Turnuswochentag und erster Unterrichtstag stimmen nicht überein, setze nächsten {input$number_selector[1]} aus der Woche als Starttag ({schulanfangneu})."))
+      shinyjs::alert(glue::glue("Erster Turnuswochentag und erster Unterrichtstag stimmen nicht überein, setze {input$number_selector[1]} aus der Woche als Starttag ({schulanfangneu})."))
     } else {
       schulanfangneu <- input$halbjahr[1]
     }
@@ -108,8 +108,9 @@ server <- function(input, output, session) {
       if(year(input$halbjahr[1]) != year(input$halbjahr[2])){
         withProgress(message = 'Mache API-Abfragen', value = 0.7, {
           disable("klassenarbeiten")
-          ferienintervall <- c(getHolidays(year(input$halbjahr[1])),
-                               getHolidays(year(input$halbjahr[2]), pause = 10))
+          ferienintervall <- c(getHolidays_schule(pause = 5),
+                               getHolidays_feiertag(year(input$halbjahr[1]), pause = 1),
+                               getHolidays_feiertag(year(input$halbjahr[2]), pause = 5))
           api(ferienintervall)
           halbjahrend(input$halbjahr[2])
           halbjahranf(input$halbjahr[1])
@@ -118,7 +119,8 @@ server <- function(input, output, session) {
       } else {
         withProgress(message = 'Mache API-Abfrage', value = 0.7, {
           disable("klassenarbeiten")
-          ferienintervall <- getHolidays(year(input$halbjahr[1]))
+          ferienintervall <- c(getHolidays_schule(pause = 5),
+                               getHolidays_feiertag(year(input$halbjahr[1]), pause = 1))
           api(ferienintervall)
           halbjahrend(input$halbjahr[2])
           halbjahranf(input$halbjahr[1])

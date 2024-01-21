@@ -1,9 +1,9 @@
-
-getHolidays <- function(jahr = lubridate::year(lubridate::today()), pause = 5){
+# ferien
+getHolidays_schule <- function(pause = 5){
   Sys.sleep(pause)
 
-  # ferien
-  url <- paste0("https://ferien-api.de/api/v1/holidays/NI/", jahr)
+  #url <- paste0("https://ferien-api.de/api/v1/holidays/NI/", jahr) # bei Jahresübergängen fehlen ggfs. Daten
+  url <- paste0("https://ferien-api.de/api/v1/holidays/NI/")        # --> daher alles
   headers <- c("accept" = "application/json")
 
   response <- httr::GET(url, headers = headers)
@@ -17,8 +17,13 @@ getHolidays <- function(jahr = lubridate::year(lubridate::today()), pause = 5){
   end_dates <- as.Date(ferien$end)
 
   ferienintervall <- purrr::map2_vec(start_dates, end_dates, lubridate::interval)
+  return(ferienintervall)
+}
 
-  # feiertage
+
+# feiertage
+getHolidays_feiertag <- function(jahr = lubridate::year(lubridate::today()), pause = 5){
+  Sys.sleep(pause)
 
   url <- paste0("https://feiertage-api.de/api/?jahr=", jahr, "&nur_land=NI")
   headers <- c("accept" = "application/json")
@@ -30,7 +35,7 @@ getHolidays <- function(jahr = lubridate::year(lubridate::today()), pause = 5){
   feiertage <- purrr::map_vec(feiertage, ~lubridate::as_date(.x$datum[1])) |> unname()
   feiertage <- purrr::map2_vec(feiertage, feiertage, lubridate::interval)
 
-  return(c(ferienintervall, feiertage))
+  return(feiertage)
 }
 
 
