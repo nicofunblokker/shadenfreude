@@ -203,6 +203,7 @@ server <- function(input, output, session) {
       ## Notebook erstellen
       wb <- createWorkbook()
       addWorksheet(wb, "Noten")
+      freezePane(wb, "Noten", firstActiveCol = 6)
       writeData(wb, "Noten", x = full)
       setColWidths(wb, "Noten", cols = 6:ncol(full), widths = "auto")
 
