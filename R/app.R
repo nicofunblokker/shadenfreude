@@ -178,7 +178,7 @@ server <- function(input, output, session) {
       }
 
       # Letzte Spalte
-      to <- tail(as.vector(sapply(c("", LETTERS[1:10]), \(x) paste0(x, LETTERS)))[6:(length(termine())+7)],1)
+      to <- tail(as.vector(sapply(c("", LETTERS[1:10]), \(x) paste0(x, LETTERS)))[6:(length(termine())+5)],1)
 
       # Variablen einführen
       empty$ID = 1:SuS
@@ -209,8 +209,8 @@ server <- function(input, output, session) {
 
       # Style festlegen
       neutralStyle <- createStyle(bgFill = "grey")
-      posStyle <- createStyle(bgFill = "#C6EFCE")
-      negStyle <- createStyle(bgFill = "#FFC7CE")
+      posStyle <- createStyle(bgFill = "#c6d7ef")
+      negStyle <- createStyle(bgFill = "#83ccc7")
 
       idx0 <- which(colnames(full) %in% termine())
       conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1:(SuS+1), style = posStyle, rule = "<7",
