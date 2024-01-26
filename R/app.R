@@ -206,11 +206,13 @@ server <- function(input, output, session) {
       freezePane(wb, "Noten", firstActiveCol = 6)
       writeData(wb, "Noten", x = full)
       setColWidths(wb, "Noten", cols = c(2, 6:ncol(full)), widths = "auto")
+      bodyStyle <- createStyle(fgFill = 'grey95', border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65')
+      addStyle(wb, sheet = "Noten", bodyStyle, rows = 1:(SuS+1), cols = 1:5, gridExpand = TRUE)
 
       # Style festlegen
-      neutralStyle <- createStyle(bgFill = "grey")
-      posStyle <- createStyle(bgFill = "#c6d7ef", border = "TopBottomLeftRight", borderStyle = 'thin')
-      negStyle <- createStyle(bgFill = "#EFDEC6", border = "TopBottomLeftRight", borderStyle = 'thin')
+      neutralStyle <- createStyle(bgFill = "grey", borderColour = 'grey65')
+      posStyle <- createStyle(bgFill = "#c6d7ef", border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65')
+      negStyle <- createStyle(bgFill = "#EFDEC6", border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65')
 
       idx0 <- which(colnames(full) %in% termine())
       conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1:(SuS+1), style = posStyle, rule = "<7",
