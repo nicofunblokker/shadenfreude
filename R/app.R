@@ -17,7 +17,7 @@ ui <- fluidPage(
   shinyjs::useShinyjs(),
   titlePanel("Notentabelle"),
 
-  HTML('Schritte bitte nacheinander ausfüllen. Im Zweifel neuladen und wieder von oben anfangen.<br>Erster Turnus<i>wochentag</i> sollte mit Start<i>wochentag</i> übereinstimmen.<br>Nach Eingabe des Halbjahreszeitraums etwa 5-15 Sekunden warten.'),
+  HTML('Schritte bitte nacheinander ausfüllen.<br> Im Zweifel neuladen und wieder von oben anfangen.'),
   br(),
   br(),
 
@@ -162,7 +162,7 @@ server <- function(input, output, session) {
       SuS <- as.numeric(input$sus)   # Specify the number SuS
       klassenarbeiten <- as.character(input$klassenarbeiten)  # Klassenarbeiten festlegen
       # datensatz kreieren
-      empty <- data.frame(matrix(0, ncol = length(termine()), nrow = SuS))
+      empty <- data.frame(matrix(ncol = length(termine()), nrow = SuS))
       colnames(empty) <- termine()
 
       # wenn keine Klassenarbeiten gewählt, mache nichts
@@ -182,13 +182,13 @@ server <- function(input, output, session) {
 
       # Variablen einführen
       empty$ID = 1:SuS
-      empty$`Name` = rep("", SuS)
-      empty$Gesamtnote = sprintf('=AVERAGEIF(D%d:E%d, "<>0", D%d:E%d)', 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
-      empty$muendlich = sprintf(glue::glue('= AVERAGEIFS(F%d:{to}%d, F1:{to}1, "<>*KLAUSUR*", F1:{to}1, "<>*FREI*", F%d:{to}%d, "<>0")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
-      empty$schriftlich = sprintf(glue::glue('= AVERAGEIFS(F%d:{to}%d, F1:{to}1, "*KLAUSUR*", F%d:{to}%d, "<>0")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
+      empty$`Nachname, Vorname` = rep("", SuS)
+      empty$Gesamtnote = sprintf('=IFERROR(AVERAGEIF(D%d:E%d, "<>0", D%d:E%d), "")', 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
+      empty$muendlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "<>*KLAUSUR*", F1:{to}1, "<>*FREI*", F%d:{to}%d, "<>0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
+      empty$schriftlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "*KLAUSUR*", F%d:{to}%d, "<>0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
 
       # Datensatz neu-anordnen
-      full <- empty %>% select(ID, Name, Gesamtnote, muendlich, schriftlich, everything()) %>%
+      full <- empty %>% select(ID, `Nachname, Vorname`, Gesamtnote, muendlich, schriftlich, everything()) %>%
         mutate(across(contains("FREI"), ~ ""))
 
       if(!input$holiday){
@@ -205,12 +205,12 @@ server <- function(input, output, session) {
       addWorksheet(wb, "Noten")
       freezePane(wb, "Noten", firstActiveCol = 6)
       writeData(wb, "Noten", x = full)
-      setColWidths(wb, "Noten", cols = 6:ncol(full), widths = "auto")
+      setColWidths(wb, "Noten", cols = c(2, 6:ncol(full)), widths = "auto")
 
       # Style festlegen
       neutralStyle <- createStyle(bgFill = "grey")
-      posStyle <- createStyle(bgFill = "#c6d7ef")
-      negStyle <- createStyle(bgFill = "#83ccc7")
+      posStyle <- createStyle(bgFill = "#c6d7ef", border = "TopBottomLeftRight", borderStyle = 'thin')
+      negStyle <- createStyle(bgFill = "#EFDEC6", border = "TopBottomLeftRight", borderStyle = 'thin')
 
       idx0 <- which(colnames(full) %in% termine())
       conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1:(SuS+1), style = posStyle, rule = "<7",
