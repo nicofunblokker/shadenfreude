@@ -234,8 +234,6 @@ server <- function(input, output, session) {
       idx0 <- which(colnames(full) %in% termine())
       conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1:(SuS+1), style = posStyle, rule = "<7",
                             type = "expression")
-      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = posStyle, rule = "-",
-                            type = "contains")
       conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = posStyleH1, rule = "-",
                             type = "contains")
 
@@ -243,8 +241,6 @@ server <- function(input, output, session) {
       for(i in idx){
         conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1:(SuS+1), style = neutralStyle, rule = "=TRUE",
                               type = "expression")
-        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1, style = neutralStyle, rule = "-",
-                              type = "contains")
         conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1, style = neutralStyleH1, rule = "-",
                               type = "contains")
       }
@@ -253,8 +249,6 @@ server <- function(input, output, session) {
       for(i in idx2){
         conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1:(SuS+1), style = negStyle, rule = "<7",
                               type = "expression")
-        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1, style = negStyle, rule = "-",
-                              type = "contains")
         conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1, style = negStyleH1, rule = "-",
                               type = "contains")
       }
