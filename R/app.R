@@ -15,6 +15,7 @@ wochentage <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 
 # Define UI
 ui <- page_fluid(
+  style = 'margin: 10px 15px',
   theme = bs_theme(preset = "shiny"),
   shinyjs::useShinyjs(),
   titlePanel("Notentabelle"),
