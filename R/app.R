@@ -205,7 +205,7 @@ server <- function(input, output, session) {
       addWorksheet(wb, "Noten")
       freezePane(wb, "Noten", firstActiveCol = 6)
       writeData(wb, "Noten", x = full)
-      setColWidths(wb, "Noten", cols = c(2, 6:ncol(full)), widths = "auto")
+      setColWidths(wb, "Noten", cols = c(1:2, 6:ncol(full)), widths = "auto")
       bodyStyle <- createStyle(fgFill = 'grey95', border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65')
       addStyle(wb, sheet = "Noten", bodyStyle, rows = 1:(SuS+1), cols = 1:5, gridExpand = TRUE)
 
