@@ -215,7 +215,7 @@ server <- function(input, output, session) {
       # füge borderColor hinzu + jeweils für body and headers
       bodyStyle <- createStyle(fgFill = 'grey95', border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65', halign = "center", valign = "center")
       addStyle(wb, sheet = "Noten", bodyStyle, rows = 1:(SuS+1), cols = 1:5, gridExpand = TRUE)
-      bodyStyle2 <- createStyle(fgFill = 'grey95', border = c("top","bottom","left","right"), borderStyle = c('thin','thick','thin','thin'), borderColour = 'grey45', halign = "center", valign = "center")
+      bodyStyle2 <- createStyle(fgFill = 'grey90', border = c("top","bottom","left","right"), borderStyle = c('thin','thick','thin','thin'), borderColour = 'grey45', halign = "center", valign = "center")
       addStyle(wb, sheet = "Noten", bodyStyle2, rows = 1, cols = 1:5, gridExpand = TRUE)
 
       # Style festlegen
@@ -224,9 +224,9 @@ server <- function(input, output, session) {
       negStyle <- createStyle(bgFill = "#EFDEC6", border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65')
 
       # add border to header
-      neutralStyleH1 <- createStyle(bgFill = "grey", borderColour = 'grey45')
-      posStyleH1 <- createStyle(bgFill = "#c6d7ef", border = "Bottom", borderStyle = 'thick', borderColour = 'grey45')
-      negStyleH1 <- createStyle(bgFill = "#EFDEC6", border = "Bottom", borderStyle = 'thick', borderColour = 'grey45')
+      neutralStyleH1 <- createStyle(bgFill = "grey50", borderColour = 'grey45', border = "Bottom", borderStyle = 'thick')
+      posStyleH1 <- createStyle(bgFill = "#8FB8FF", border = "Bottom", borderStyle = 'thick', borderColour = 'grey45')
+      negStyleH1 <- createStyle(bgFill = "#FFD68F", border = "Bottom", borderStyle = 'thick', borderColour = 'grey45')
 
       idx0 <- which(colnames(full) %in% termine())
       conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1:(SuS+1), style = posStyle, rule = "<7",
