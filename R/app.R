@@ -232,6 +232,7 @@ server <- function(input, output, session) {
       posStyleH1 <- createStyle(bgFill = "#8FB8FF", border = "Bottom", borderStyle = 'thick', borderColour = 'grey45')
       negStyleH1 <- createStyle(bgFill = "#FFD68F", border = "Bottom", borderStyle = 'thick', borderColour = 'grey45')
 
+      # header regeln für gesamte reihe
       idx0 <- 6:ncol(full)
       conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = posStyleH1, rule = "Klausur",
                             type = "notContains")
@@ -242,20 +243,20 @@ server <- function(input, output, session) {
       conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = neutralStyleH1, rule = "Frei",
                             type = "contains")
 
+      # body regeln für einzelne Spalten
       all <- as.vector(sapply(c("", LETTERS[1:10]), \(x) paste0(x, LETTERS)))
       for (i in idx0) {
-        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = posStyle, rule = glue::glue('NOT(ISNUMBER(SEARCH("Klausur", ${all[i]}$1)))'),
-                              type = "expression")
-        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = posStyle, rule = glue::glue('NOT(ISNUMBER(SEARCH("Frei", ${all[i]}$1)))'),
+        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = posStyle, rule = glue::glue('NOT(OR(ISNUMBER(SEARCH("Klausur", ${all[i]}$1)), ISNUMBER(SEARCH("Frei", ${all[i]}$1))))'),
                               type = "expression")
         conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = negStyle, rule = glue::glue('ISNUMBER(SEARCH("Klausur", ${all[i]}$1))'),
                               type = "expression")
         conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = neutralStyle, rule = glue::glue('ISNUMBER(SEARCH("FREI", ${all[i]}$1))'),
                               type = "expression")
-        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = createStyle(bgFill = "white"), rule = ">6",
-                              type = "expression")
         incProgress(amount = 1/length(idx0))
       }
+      # body regeln für alle spalten ab spalte 6 incl.
+      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 2:(SuS+1), style = createStyle(bgFill = "white"), rule = ">6",
+                            type = "expression")
 
       # notenspiegel
       notenspiegel <- data.frame(Note = 1:6, Anzahl = sprintf('=COUNTIFS(Noten!C%d:Noten!C%d, ">%d,5", Noten!C%d:Noten!C%d, "<=%d,5")', 2, SuS+1, 0:5, 2, SuS+1, 1:6))
