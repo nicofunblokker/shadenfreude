@@ -245,24 +245,15 @@ server <- function(input, output, session) {
       for (i in idx0) {
         conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = posStyle, rule = glue::glue('NOT(ISNUMBER(SEARCH("Klausur", ${all[i]}$1)))'),
                               type = "expression")
-      }
-      for (i in idx0) {
         conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = posStyle, rule = glue::glue('NOT(ISNUMBER(SEARCH("Frei", ${all[i]}$1)))'),
                               type = "expression")
-      }
-      for (i in idx0) {
         conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = negStyle, rule = glue::glue('ISNUMBER(SEARCH("Klausur", ${all[i]}$1))'),
                               type = "expression")
-      }
-      for (i in idx0) {
         conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = neutralStyle, rule = glue::glue('ISNUMBER(SEARCH("FREI", ${all[i]}$1))'),
                               type = "expression")
-      }
-      for (i in idx0){
         conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = createStyle(bgFill = "white"), rule = ">7",
                               type = "expression")
       }
-
 
       # notenspiegel
       notenspiegel <- data.frame(Note = 1:6, Anzahl = sprintf('=COUNTIFS(Noten!C%d:Noten!C%d, ">%d,5", Noten!C%d:Noten!C%d, "<=%d,5")', 2, SuS+1, 0:5, 2, SuS+1, 1:6))
