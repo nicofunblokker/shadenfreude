@@ -7,17 +7,19 @@ library(openxlsx)
 library(lubridate)
 library(dplyr)
 library(shinyjs)
+library(bslib)
 source("getHolidays.R")
 source("turnus.R")
 
 wochentage <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 
 # Define UI
-ui <- fluidPage(
+ui <- page_fluid(
+  theme = bs_theme(preset = "shiny"),
   shinyjs::useShinyjs(),
   titlePanel("Notentabelle"),
 
-  HTML('Schritte bitte nacheinander ausfüllen.<br> Im Zweifel neuladen und wieder von oben anfangen.'),
+  HTML('Schritte bitte nacheinander ausfüllen.<br> Im Zweifel neuladen.'),
   br(),
   br(),
 
@@ -62,7 +64,7 @@ ui <- fluidPage(
 
 # Define server
 server <- function(input, output, session) {
-
+  #bslib::bs_themer()
   # disable turnus-selector, wenn halbjahr nicht gesetzt
   observe({
     req(input$number_selector)
