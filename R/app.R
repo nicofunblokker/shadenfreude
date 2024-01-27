@@ -192,8 +192,7 @@ server <- function(input, output, session) {
       empty$schriftlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "*KLAUSUR*", F%d:{to}%d, "<>0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
 
       # Datensatz neu-anordnen
-      full <- empty %>% select(ID, `Nachname, Vorname`, Gesamtnote, muendlich, schriftlich, everything()) %>%
-        mutate(across(contains("FREI"), ~ ""))
+      full <- empty %>% select(ID, `Nachname, Vorname`, Gesamtnote, muendlich, schriftlich, everything())
 
       if(!input$holiday){
         full <- full %>% select(!contains("FREI"))
@@ -243,7 +242,6 @@ server <- function(input, output, session) {
                             type = "contains")
 
       all <- as.vector(sapply(c("", LETTERS[1:10]), \(x) paste0(x, LETTERS)))
-
       for (i in idx0) {
         conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = posStyle, rule = glue::glue('NOT(ISNUMBER(SEARCH("Klausur", ${all[i]}$1)))'),
                               type = "expression")
@@ -257,7 +255,7 @@ server <- function(input, output, session) {
                               type = "expression")
       }
       for (i in idx0) {
-        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = neutralStyle, rule = glue::glue('ISNUMBER(SEARCH("Frei", ${all[i]}$1))'),
+        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = neutralStyle, rule = glue::glue('ISNUMBER(SEARCH("FREI", ${all[i]}$1))'),
                               type = "expression")
       }
       for (i in idx0){
@@ -265,22 +263,6 @@ server <- function(input, output, session) {
                               type = "expression")
       }
 
-
-
-
-
-
-      # idx <- which(grepl("FREI", colnames(full)))
-      # for(i in idx){
-      #   conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1:(SuS+1), style = neutralStyle, rule = "=TRUE",
-      #                         type = "expression")
-      # }
-      #
-      # idx2 <- which(colnames(full) %in% colnames(empty)[klassenarbeitsdaten])
-      # for(i in idx2){
-      #   conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1:(SuS+1), style = negStyle, rule = "<7",
-      #                         type = "expression")
-      # }
 
       # notenspiegel
       notenspiegel <- data.frame(Note = 1:6, Anzahl = sprintf('=COUNTIFS(Noten!C%d:Noten!C%d, ">%d,5", Noten!C%d:Noten!C%d, "<=%d,5")', 2, SuS+1, 0:5, 2, SuS+1, 1:6))
