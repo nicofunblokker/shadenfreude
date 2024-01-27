@@ -7,16 +7,16 @@ library(openxlsx)
 library(lubridate)
 library(dplyr)
 library(shinyjs)
-library(bslib)
+#library(bslib)
 source("getHolidays.R")
 source("turnus.R")
 
 wochentage <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 
 # Define UI
-ui <- page_fluid(
+ui <- fluidPage(
   style = 'margin: 10px 15px',
-  theme = bs_theme(preset = "shiny"),
+  #theme = bs_theme(preset = "shiny"),
   shinyjs::useShinyjs(),
   titlePanel("Notentabelle"),
 
@@ -162,6 +162,7 @@ server <- function(input, output, session) {
       }
     },
     content = function(file) {
+      withProgress(message = 'Erstelle Datei', value = 0.0, {
       SuS <- as.numeric(input$sus)   # Specify the number SuS
       klassenarbeiten <- as.character(input$klassenarbeiten)  # Klassenarbeiten festlegen
       # datensatz kreieren
@@ -181,7 +182,8 @@ server <- function(input, output, session) {
       }
 
       # Letzte Spalte
-      to <- tail(as.vector(sapply(c("", LETTERS[1:10]), \(x) paste0(x, LETTERS)))[6:(length(termine())+5)],1)
+      to_all <- as.vector(sapply(c("", LETTERS[1:10]), \(x) paste0(x, LETTERS)))[6:(length(termine())+5)]
+      to <- tail(to_all,1)
 
       # Variablen einführen
       empty$ID = 1:SuS
@@ -191,8 +193,7 @@ server <- function(input, output, session) {
       empty$schriftlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "*KLAUSUR*", F%d:{to}%d, "<>0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
 
       # Datensatz neu-anordnen
-      full <- empty %>% select(ID, `Nachname, Vorname`, Gesamtnote, muendlich, schriftlich, everything()) %>%
-        mutate(across(contains("FREI"), ~ ""))
+      full <- empty %>% select(ID, `Nachname, Vorname`, Gesamtnote, muendlich, schriftlich, everything())
 
       if(!input$holiday){
         full <- full %>% select(!contains("FREI"))
@@ -231,32 +232,29 @@ server <- function(input, output, session) {
       posStyleH1 <- createStyle(bgFill = "#8FB8FF", border = "Bottom", borderStyle = 'thick', borderColour = 'grey45')
       negStyleH1 <- createStyle(bgFill = "#FFD68F", border = "Bottom", borderStyle = 'thick', borderColour = 'grey45')
 
-      idx0 <- which(colnames(full) %in% termine())
-      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1:(SuS+1), style = posStyle, rule = "<7",
-                            type = "expression")
-      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = posStyle, rule = "-",
+      idx0 <- 6:ncol(full)
+      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = posStyleH1, rule = "Klausur",
+                            type = "notContains")
+      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = posStyleH1, rule = "Frei",
+                            type = "notContains")
+      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = negStyleH1, rule = "Klausur",
                             type = "contains")
-      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = posStyleH1, rule = "-",
+      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = neutralStyleH1, rule = "Frei",
                             type = "contains")
 
-      idx <- which(grepl("FREI", colnames(full)))
-      for(i in idx){
-        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1:(SuS+1), style = neutralStyle, rule = "=TRUE",
+      all <- as.vector(sapply(c("", LETTERS[1:10]), \(x) paste0(x, LETTERS)))
+      for (i in idx0) {
+        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = posStyle, rule = glue::glue('NOT(ISNUMBER(SEARCH("Klausur", ${all[i]}$1)))'),
                               type = "expression")
-        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1, style = neutralStyle, rule = "-",
-                              type = "contains")
-        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1, style = neutralStyleH1, rule = "-",
-                              type = "contains")
-      }
-
-      idx2 <- which(colnames(full) %in% colnames(empty)[klassenarbeitsdaten])
-      for(i in idx2){
-        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1:(SuS+1), style = negStyle, rule = "<7",
+        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = posStyle, rule = glue::glue('NOT(ISNUMBER(SEARCH("Frei", ${all[i]}$1)))'),
                               type = "expression")
-        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1, style = negStyle, rule = "-",
-                              type = "contains")
-        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1, style = negStyleH1, rule = "-",
-                              type = "contains")
+        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = negStyle, rule = glue::glue('ISNUMBER(SEARCH("Klausur", ${all[i]}$1))'),
+                              type = "expression")
+        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = neutralStyle, rule = glue::glue('ISNUMBER(SEARCH("FREI", ${all[i]}$1))'),
+                              type = "expression")
+        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = createStyle(bgFill = "white"), rule = ">6",
+                              type = "expression")
+        incProgress(amount = 1/length(idx0))
       }
 
       # notenspiegel
@@ -266,8 +264,9 @@ server <- function(input, output, session) {
       writeData(wb, "Notenspiegel", x = notenspiegel)
       # speichern
       saveWorkbook(wb, file, overwrite = TRUE)
-    }
+      }
   )
+    })
 }
 
 # Run the app
