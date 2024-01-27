@@ -1,7 +1,4 @@
-# Install shiny package if not installed
-# install.packages("shiny")
-
-# Load shiny library
+# Load shiny libraries
 library(shiny)
 library(openxlsx)
 library(lubridate)
@@ -10,7 +7,6 @@ library(shinyjs)
 #library(bslib)
 source("getHolidays.R")
 source("turnus.R")
-
 wochentage <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 
 # Define UI
@@ -181,8 +177,12 @@ server <- function(input, output, session) {
         colnames(empty)[frei] <- paste("FREI", colnames(empty)[frei])
       }
 
+      if(!input$holiday){
+        empty <- empty %>% select(!contains("FREI"))
+      }
+
       # Letzte Spalte
-      to_all <- as.vector(sapply(c("", LETTERS[1:10]), \(x) paste0(x, LETTERS)))[6:(length(termine())+5)]
+      to_all <- as.vector(sapply(c("", LETTERS[1:10]), \(x) paste0(x, LETTERS)))[6:(ncol(empty)+5)]
       to <- tail(to_all,1)
 
       # Variablen einführen
@@ -194,10 +194,6 @@ server <- function(input, output, session) {
 
       # Datensatz neu-anordnen
       full <- empty %>% select(ID, `Nachname, Vorname`, Gesamtnote, muendlich, schriftlich, everything())
-
-      if(!input$holiday){
-        full <- full %>% select(!contains("FREI"))
-      }
 
       # Formelspalten als solche klassifizieren
       for(i in c(3:5)){
@@ -257,6 +253,8 @@ server <- function(input, output, session) {
       # body regeln für alle spalten ab spalte 6 incl.
       conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 2:(SuS+1), style = createStyle(bgFill = "white"), rule = ">6",
                             type = "expression")
+      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = createStyle(bgFill = "white", border = "Bottom", borderStyle = 'thin'), rule = "-",
+                            type = "notContains")
 
       # notenspiegel
       notenspiegel <- data.frame(Note = 1:6, Anzahl = sprintf('=COUNTIFS(Noten!C%d:Noten!C%d, ">%d,5", Noten!C%d:Noten!C%d, "<=%d,5")', 2, SuS+1, 0:5, 2, SuS+1, 1:6))
