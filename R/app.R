@@ -206,25 +206,43 @@ server <- function(input, output, session) {
       freezePane(wb, "Noten", firstActiveCol = 6)
       writeData(wb, "Noten", x = full)
       setColWidths(wb, "Noten", cols = c(1:2, 6:ncol(full)), widths = "auto")
-      bodyStyle <- createStyle(fgFill = 'grey95', border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65')
+      setRowHeights(wb, "Noten", rows = c(1), heights = c(40))
+
+      # center headers
+      headerstyle <- createStyle(halign = "center", valign = "center")
+      addStyle(wb, sheet = "Noten", headerstyle, rows = 1, cols = 1:ncol(full))
+
+      # füge borderColor hinzu + jeweils für body and headers
+      bodyStyle <- createStyle(fgFill = 'grey95', border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65', halign = "center", valign = "center")
       addStyle(wb, sheet = "Noten", bodyStyle, rows = 1:(SuS+1), cols = 1:5, gridExpand = TRUE)
+      bodyStyle2 <- createStyle(fgFill = 'grey95', border = c("top","bottom","left","right"), borderStyle = c('thin','thick','thin','thin'), borderColour = 'grey45', halign = "center", valign = "center")
+      addStyle(wb, sheet = "Noten", bodyStyle2, rows = 1, cols = 1:5, gridExpand = TRUE)
 
       # Style festlegen
       neutralStyle <- createStyle(bgFill = "grey", borderColour = 'grey65')
       posStyle <- createStyle(bgFill = "#c6d7ef", border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65')
       negStyle <- createStyle(bgFill = "#EFDEC6", border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65')
 
+      # add border to header
+      neutralStyleH1 <- createStyle(bgFill = "grey", borderColour = 'grey45')
+      posStyleH1 <- createStyle(bgFill = "#c6d7ef", border = "Bottom", borderStyle = 'thick', borderColour = 'grey45')
+      negStyleH1 <- createStyle(bgFill = "#EFDEC6", border = "Bottom", borderStyle = 'thick', borderColour = 'grey45')
+
       idx0 <- which(colnames(full) %in% termine())
       conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1:(SuS+1), style = posStyle, rule = "<7",
                             type = "expression")
-      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1:(SuS+1), style = posStyle, rule = "-",
+      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = posStyle, rule = "-",
+                            type = "contains")
+      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = posStyleH1, rule = "-",
                             type = "contains")
 
       idx <- which(grepl("FREI", colnames(full)))
       for(i in idx){
         conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1:(SuS+1), style = neutralStyle, rule = "=TRUE",
                               type = "expression")
-        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1:(SuS+1), style = neutralStyle, rule = "-",
+        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1, style = neutralStyle, rule = "-",
+                              type = "contains")
+        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1, style = neutralStyleH1, rule = "-",
                               type = "contains")
       }
 
@@ -232,7 +250,9 @@ server <- function(input, output, session) {
       for(i in idx2){
         conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1:(SuS+1), style = negStyle, rule = "<7",
                               type = "expression")
-        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1:(SuS+1), style = negStyle, rule = "-",
+        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1, style = negStyle, rule = "-",
+                              type = "contains")
+        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 1, style = negStyleH1, rule = "-",
                               type = "contains")
       }
 
