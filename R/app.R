@@ -219,7 +219,7 @@ server <- function(input, output, session) {
         addStyle(wb, sheet = "Noten", bodyStyle2, rows = 1, cols = 1:5, gridExpand = TRUE)
 
         # Style festlegen
-        neutralStyle <- createStyle(bgFill = "grey", borderColour = 'grey65')
+        neutralStyle <- createStyle(bgFill = "grey", borderColour = 'grey', border = "TopBottomLeftRight", borderStyle = 'thin')
         posStyle <- createStyle(bgFill = "#c6d7ef", border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65')
         negStyle <- createStyle(bgFill = "#EFDEC6", border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65')
 
@@ -241,8 +241,7 @@ server <- function(input, output, session) {
 
         incProgress(amount = 1/3)
 
-        # body regeln für einzelne Spalten
-        #idx0 <- 6:ncol(full)
+        # body regeln für gesamte Spalten
         conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 2:(SuS+1), style = posStyle, rule = glue::glue('NOT(OR(ISNUMBER(SEARCH("Klausur", INDEX($1:$1,COLUMN()))), ISNUMBER(SEARCH("FREI", INDEX(1:1,COLUMN())))))'),
                               type = "expression")
         conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 2:(SuS+1), style = negStyle, rule = glue::glue('ISNUMBER(SEARCH("Klausur", INDEX($1:$1,COLUMN())))'),
