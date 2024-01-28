@@ -101,7 +101,7 @@ server <- function(input, output, session) {
     } else {
       schulanfangneu <- input$halbjahr[1]
     }
-    print(api())
+
     # Feiertage und Ferien abrufen (nur wenn dies nicht bereits geschehen)
     if(api()[1] == 0){    #  || ymd(halbjahrend()) < ymd(input$halbjahr[2]) || ymd(halbjahranf()) > ymd(input$halbjahr[1])
       withProgress(message = 'Mache API-Abfragen', value = 0.0, {
