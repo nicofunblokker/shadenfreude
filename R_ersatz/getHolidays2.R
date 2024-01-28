@@ -14,7 +14,7 @@ getHolidays <- function(start, end, pause = 5, progress){
   ferienintervall <- purrr::map2_vec(start_dates, end_dates, lubridate::interval)
 
 
-  Sys.sleep(pause-4)
+  Sys.sleep(1)
   incProgress(amount = progress)
   # feiertage
   urlFeiertag <- glue::glue("https://openholidaysapi.org/PublicHolidays?countryIsoCode=DE&languageIsoCode=DE&validFrom={start}&validTo={end}&subdivisionCode=DE-NI")
