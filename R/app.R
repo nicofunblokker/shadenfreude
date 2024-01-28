@@ -190,7 +190,7 @@ server <- function(input, output, session) {
         empty$`Nachname, Vorname` = rep("", SuS)
         empty$Gesamtnote = sprintf('=IFERROR(AVERAGEIF(D%d:E%d, "<>0", D%d:E%d), "")', 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
         empty$muendlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "<>*KLAUSUR*", F1:{to}1, "<>*FREI*", F%d:{to}%d, "<>0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
-        empty$schriftlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "*KLAUSUR*", F%d:{to}%d, "<>0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
+        empty$schriftlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "*KLAUSUR*", F1:{to}1, "<>*FREI*", F%d:{to}%d, "<>0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
 
         # Datensatz neu-anordnen
         full <- empty %>% select(ID, `Nachname, Vorname`, Gesamtnote, muendlich, schriftlich, everything())
