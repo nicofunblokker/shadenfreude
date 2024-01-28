@@ -92,7 +92,7 @@ server <- function(input, output, session) {
     req(input$number_selector, input$halbjahr[2])
     shinyjs::disable("number_selector")
 
-  # wenn ausgewählter Wochentag nicht dem ersten Turnustag entspricht, wird er automatisch angepasst
+    # wenn ausgewählter Wochentag nicht dem ersten Turnustag entspricht, wird er automatisch angepasst
     if(input$number_selector[1] != weekdays(ymd(input$halbjahr[1]))){
       ersterTurnustag <- which(input$number_selector[1] == wochentage)
       schulanfangneu <- lubridate::floor_date(ymd(input$halbjahr[1]), "week") + days(ersterTurnustag)
@@ -159,112 +159,114 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       withProgress(message = 'Erstelle Datei', value = 0.0, {
-      SuS <- as.numeric(input$sus)   # Specify the number SuS
-      klassenarbeiten <- as.character(input$klassenarbeiten)  # Klassenarbeiten festlegen
-      # datensatz kreieren
-      empty <- data.frame(matrix(ncol = length(termine()), nrow = SuS))
-      colnames(empty) <- termine()
+        SuS <- as.numeric(input$sus)   # Specify the number SuS
+        klassenarbeiten <- as.character(input$klassenarbeiten)  # Klassenarbeiten festlegen
+        # datensatz kreieren
+        empty <- data.frame(matrix(ncol = length(termine()), nrow = SuS))
+        colnames(empty) <- termine()
 
-      # wenn keine Klassenarbeiten gewählt, mache nichts
-      if(length(klassenarbeiten) != "character(0)"){
-        klassenarbeiten <- format(ymd(klassenarbeiten), "%a %d-%m-%y")
-        klassenarbeitsdaten <- which(colnames(empty) %in% klassenarbeiten)
-        colnames(empty)[klassenarbeitsdaten] <- paste("Klausur\n", colnames(empty)[klassenarbeitsdaten])
-      }
+        # wenn keine Klassenarbeiten gewählt, mache nichts
+        if(length(klassenarbeiten) != "character(0)"){
+          klassenarbeiten <- format(ymd(klassenarbeiten), "%a %d-%m-%y")
+          klassenarbeitsdaten <- which(colnames(empty) %in% klassenarbeiten)
+          colnames(empty)[klassenarbeitsdaten] <- paste("Klausur\n", colnames(empty)[klassenarbeitsdaten])
+        }
 
-      if(any(colnames(empty) %in% termine()[ausfall()])){
-        frei <- which(colnames(empty) %in% termine()[ausfall()])
-        colnames(empty)[frei] <- paste("FREI", colnames(empty)[frei])
-      }
+        if(any(colnames(empty) %in% termine()[ausfall()])){
+          frei <- which(colnames(empty) %in% termine()[ausfall()])
+          colnames(empty)[frei] <- paste("FREI", colnames(empty)[frei])
+        }
 
-      if(!input$holiday){
-        empty <- empty %>% select(!contains("FREI"))
-      }
+        if(!input$holiday){
+          empty <- empty %>% select(!contains("FREI"))
+        }
 
-      # Letzte Spalte
-      to_all <- as.vector(sapply(c("", LETTERS[1:10]), \(x) paste0(x, LETTERS)))[6:(ncol(empty)+5)]
-      to <- tail(to_all,1)
+        # Letzte Spalte
+        to_all <- as.vector(sapply(c("", LETTERS[1:10]), \(x) paste0(x, LETTERS)))[6:(ncol(empty)+5)]
+        to <- tail(to_all,1)
 
-      # Variablen einführen
-      empty$ID = 1:SuS
-      empty$`Nachname, Vorname` = rep("", SuS)
-      empty$Gesamtnote = sprintf('=IFERROR(AVERAGEIF(D%d:E%d, "<>0", D%d:E%d), "")', 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
-      empty$muendlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "<>*KLAUSUR*", F1:{to}1, "<>*FREI*", F%d:{to}%d, "<>0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
-      empty$schriftlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "*KLAUSUR*", F%d:{to}%d, "<>0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
+        # Variablen einführen
+        empty$ID = 1:SuS
+        empty$`Nachname, Vorname` = rep("", SuS)
+        empty$Gesamtnote = sprintf('=IFERROR(AVERAGEIF(D%d:E%d, "<>0", D%d:E%d), "")', 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
+        empty$muendlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "<>*KLAUSUR*", F1:{to}1, "<>*FREI*", F%d:{to}%d, "<>0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
+        empty$schriftlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "*KLAUSUR*", F%d:{to}%d, "<>0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
 
-      # Datensatz neu-anordnen
-      full <- empty %>% select(ID, `Nachname, Vorname`, Gesamtnote, muendlich, schriftlich, everything())
+        # Datensatz neu-anordnen
+        full <- empty %>% select(ID, `Nachname, Vorname`, Gesamtnote, muendlich, schriftlich, everything())
 
-      # Formelspalten als solche klassifizieren
-      for(i in c(3:5)){
-        class(full[,i]) <- c(class(full[,i]), "formula")
-      }
+        # Formelspalten als solche klassifizieren
+        for(i in c(3:5)){
+          class(full[,i]) <- c(class(full[,i]), "formula")
+        }
 
-      ## Notebook erstellen
-      wb <- createWorkbook()
-      addWorksheet(wb, "Noten")
-      freezePane(wb, "Noten", firstActiveCol = 6)
-      writeData(wb, "Noten", x = full)
-      setColWidths(wb, "Noten", cols = c(1:2, 6:ncol(full)), widths = "auto")
-      setRowHeights(wb, "Noten", rows = c(1), heights = c(40))
+        ## Notebook erstellen
+        wb <- createWorkbook()
+        addWorksheet(wb, "Noten")
+        freezePane(wb, "Noten", firstActiveCol = 6)
+        writeData(wb, "Noten", x = full)
+        setColWidths(wb, "Noten", cols = c(1:2, 6:ncol(full)), widths = "auto")
+        setRowHeights(wb, "Noten", rows = c(1), heights = c(40))
 
-      # center headers
-      headerstyle <- createStyle(halign = "center", valign = "center")
-      addStyle(wb, sheet = "Noten", headerstyle, rows = 1, cols = 1:ncol(full))
+        # center headers
+        headerstyle <- createStyle(halign = "center", valign = "center")
+        addStyle(wb, sheet = "Noten", headerstyle, rows = 1, cols = 1:ncol(full))
 
-      # füge borderColor hinzu + jeweils für body and headers
-      bodyStyle <- createStyle(fgFill = 'grey95', border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65', halign = "center", valign = "center")
-      addStyle(wb, sheet = "Noten", bodyStyle, rows = 1:(SuS+1), cols = 1:5, gridExpand = TRUE)
-      bodyStyle2 <- createStyle(fgFill = 'grey90', border = c("top","bottom","left","right"), borderStyle = c('thin','thick','thin','thin'), borderColour = 'grey45', halign = "center", valign = "center")
-      addStyle(wb, sheet = "Noten", bodyStyle2, rows = 1, cols = 1:5, gridExpand = TRUE)
+        # füge borderColor hinzu + jeweils für body and headers
+        bodyStyle <- createStyle(fgFill = 'grey95', border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65', halign = "center", valign = "center")
+        addStyle(wb, sheet = "Noten", bodyStyle, rows = 1:(SuS+1), cols = 1:5, gridExpand = TRUE)
+        bodyStyle2 <- createStyle(fgFill = 'grey90', border = c("top","bottom","left","right"), borderStyle = c('thin','thick','thin','thin'), borderColour = 'grey45', halign = "center", valign = "center")
+        addStyle(wb, sheet = "Noten", bodyStyle2, rows = 1, cols = 1:5, gridExpand = TRUE)
 
-      # Style festlegen
-      neutralStyle <- createStyle(bgFill = "grey", borderColour = 'grey65')
-      posStyle <- createStyle(bgFill = "#c6d7ef", border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65')
-      negStyle <- createStyle(bgFill = "#EFDEC6", border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65')
+        # Style festlegen
+        neutralStyle <- createStyle(bgFill = "grey", borderColour = 'grey65')
+        posStyle <- createStyle(bgFill = "#c6d7ef", border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65')
+        negStyle <- createStyle(bgFill = "#EFDEC6", border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65')
 
-      # add border to header
-      neutralStyleH1 <- createStyle(bgFill = "grey50", borderColour = 'grey45', border = "Bottom", borderStyle = 'thick')
-      posStyleH1 <- createStyle(bgFill = "#8FB8FF", border = "Bottom", borderStyle = 'thick', borderColour = 'grey45')
-      negStyleH1 <- createStyle(bgFill = "#FFD68F", border = "Bottom", borderStyle = 'thick', borderColour = 'grey45')
+        # add border to header
+        neutralStyleH1 <- createStyle(bgFill = "grey50", borderColour = 'grey45', border = "Bottom", borderStyle = 'thick')
+        posStyleH1 <- createStyle(bgFill = "#8FB8FF", border = "Bottom", borderStyle = 'thick', borderColour = 'grey45')
+        negStyleH1 <- createStyle(bgFill = "#FFD68F", border = "Bottom", borderStyle = 'thick', borderColour = 'grey45')
 
-      # header regeln für gesamte reihe
-      idx0 <- 6:ncol(full)
-      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = posStyleH1, rule = "Klausur",
-                            type = "notContains")
-      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = posStyleH1, rule = "Frei",
-                            type = "notContains")
-      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = negStyleH1, rule = "Klausur",
-                            type = "contains")
-      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = neutralStyleH1, rule = "Frei",
-                            type = "contains")
+        # header regeln für gesamte reihe
+        idx0 <- 6:ncol(full)
+        conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = posStyleH1, rule = "Klausur",
+                              type = "notContains")
+        conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = posStyleH1, rule = "Frei",
+                              type = "notContains")
+        conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = negStyleH1, rule = "Klausur",
+                              type = "contains")
+        conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = neutralStyleH1, rule = "Frei",
+                              type = "contains")
 
-      # body regeln für einzelne Spalten
-      all <- as.vector(sapply(c("", LETTERS[1:10]), \(x) paste0(x, LETTERS)))
-      for (i in idx0) {
-        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = posStyle, rule = glue::glue('NOT(OR(ISNUMBER(SEARCH("Klausur", ${all[i]}$1)), ISNUMBER(SEARCH("Frei", ${all[i]}$1))))'),
+        # body regeln für einzelne Spalten
+        all <- as.vector(sapply(c("", LETTERS[1:10]), \(x) paste0(x, LETTERS)))
+        for (i in idx0) {
+          conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = posStyle, rule = glue::glue('NOT(OR(ISNUMBER(SEARCH("Klausur", ${all[i]}$1)), ISNUMBER(SEARCH("Frei", ${all[i]}$1))))'),
+                                type = "expression")
+          conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = negStyle, rule = glue::glue('ISNUMBER(SEARCH("Klausur", ${all[i]}$1))'),
+                                type = "expression")
+          conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = neutralStyle, rule = glue::glue('ISNUMBER(SEARCH("FREI", ${all[i]}$1))'),
+                                type = "expression")
+          incProgress(amount = 1/length(idx0))
+        }
+        # body regeln für alle spalten ab spalte 6 incl.
+        conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 2:(SuS+1), style = createStyle(bgFill = "white"), rule = ">6",
                               type = "expression")
-        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = negStyle, rule = glue::glue('ISNUMBER(SEARCH("Klausur", ${all[i]}$1))'),
+        conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 2:(SuS+1), style = createStyle(bgFill = "white"), rule = "<0",
                               type = "expression")
-        conditionalFormatting(wb, sheet =  "Noten", cols = i, rows = 2:(SuS+1), style = neutralStyle, rule = glue::glue('ISNUMBER(SEARCH("FREI", ${all[i]}$1))'),
-                              type = "expression")
-        incProgress(amount = 1/length(idx0))
-      }
-      # body regeln für alle spalten ab spalte 6 incl.
-      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 2:(SuS+1), style = createStyle(bgFill = "white"), rule = ">6",
-                            type = "expression")
-      conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = createStyle(bgFill = "white", border = "Bottom", borderStyle = 'thin'), rule = "-",
-                            type = "notContains")
+        conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = createStyle(bgFill = "white", border = "Bottom", borderStyle = 'thin'), rule = "-",
+                              type = "notContains")
 
-      # notenspiegel
-      notenspiegel <- data.frame(Note = 1:6, Anzahl = sprintf('=COUNTIFS(Noten!C%d:Noten!C%d, ">%d,5", Noten!C%d:Noten!C%d, "<=%d,5")', 2, SuS+1, 0:5, 2, SuS+1, 1:6))
-      class(notenspiegel$Anzahl) <- c(class(notenspiegel$Anzahl), "formula")
-      addWorksheet(wb, "Notenspiegel")
-      writeData(wb, "Notenspiegel", x = notenspiegel)
-      # speichern
-      saveWorkbook(wb, file, overwrite = TRUE)
+        # notenspiegel
+        notenspiegel <- data.frame(Note = 1:6, Anzahl = sprintf('=COUNTIFS(Noten!C%d:Noten!C%d, ">%d,5", Noten!C%d:Noten!C%d, "<=%d,5")', 2, SuS+1, 0:5, 2, SuS+1, 1:6))
+        class(notenspiegel$Anzahl) <- c(class(notenspiegel$Anzahl), "formula")
+        addWorksheet(wb, "Notenspiegel")
+        writeData(wb, "Notenspiegel", x = notenspiegel)
+        # speichern
+        saveWorkbook(wb, file, overwrite = TRUE)
       }
-  )
+      )
     })
 }
 
