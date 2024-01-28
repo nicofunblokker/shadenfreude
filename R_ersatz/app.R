@@ -84,8 +84,8 @@ server <- function(input, output, session) {
   termine <- reactiveVal(0)
   ausfall <- reactiveVal(0)
   api <- reactiveVal(0)           # api results zwischenspeichern
-  halbjahrend <- reactiveVal(0)   # alte Einträge zum HJ wieder verwenden, wenn HJ-Zeitraum nachträglich verkleinert werden
-  halbjahranf <- reactiveVal(0)
+  #halbjahrend <- reactiveVal(0)   # alte Einträge zum HJ wieder verwenden, wenn HJ-Zeitraum nachträglich verkleinert werden
+  #halbjahranf <- reactiveVal(0)
 
   # remove freie tage zusätzlich from klassenarbeiten grenze Zeitbereich auf ausgewähltes Halbjahr ein
   observeEvent(input$halbjahr[2], {
@@ -101,15 +101,15 @@ server <- function(input, output, session) {
     } else {
       schulanfangneu <- input$halbjahr[1]
     }
-
+    print(api())
     # Feiertage und Ferien abrufen (nur wenn dies nicht bereits geschehen)
-    if(api()[1] == 0 || ymd(halbjahrend()) < ymd(input$halbjahr[2]) || ymd(halbjahranf()) > ymd(input$halbjahr[1])){
+    if(api()[1] == 0){    #  || ymd(halbjahrend()) < ymd(input$halbjahr[2]) || ymd(halbjahranf()) > ymd(input$halbjahr[1])
       withProgress(message = 'Mache API-Abfragen', value = 0.0, {
         disable("klassenarbeiten")
-        ferienintervall <- c(getHolidays(start = ymd(input$halbjahr[1]), end = ymd(input$halbjahr[2]), pause = 5, progress = .5))
+        ferienintervall <- getHolidays(start = ymd(floor_date(Sys.Date()- 7*8, 'year')), end = ceiling_date(ymd(input$halbjahr[2]), 'year'), pause = 5, progress = .5)
         api(ferienintervall)
-        halbjahrend(input$halbjahr[2])
-        halbjahranf(input$halbjahr[1])
+        #halbjahrend(input$halbjahr[2])
+        #halbjahranf(input$halbjahr[1])
         enable("klassenarbeiten")
       })
     } else {
