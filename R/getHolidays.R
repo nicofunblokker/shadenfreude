@@ -1,44 +1,32 @@
-# ferien
-getHolidays_schule <- function(pause = 5, progress){
+
+getHolidays <- function(start, end, pause = 5, progress){
   incProgress(amount = progress)
   Sys.sleep(pause)
 
-  #url <- paste0("https://ferien-api.de/api/v1/holidays/NI/", jahr) # bei Jahresübergängen fehlen ggfs. Daten
-  url <- paste0("https://ferien-api.de/api/v1/holidays/NI/")        # --> daher alles
+  #ferien
+  urlFerien <- glue::glue("https://openholidaysapi.org/SchoolHolidays?countryIsoCode=DE&languageIsoCode=DE&validFrom={start}&validTo={end}&subdivisionCode=DE-NI")
   headers <- c("accept" = "application/json")
-
-  response <- httr::GET(url, headers = headers)
+  response <- httr::GET(urlFerien, headers = headers)
   json_response <- httr::content(response, "text", encoding = "UTF-8")
-
-  # Parse the JSON response
   ferien <- jsonlite::fromJSON(json_response)
-
-  # Extract start and end dates as vectors
-  start_dates <- as.Date(ferien$start)
-  end_dates <- as.Date(ferien$end)
-
+  start_dates <- as.Date(ferien$startDate)
+  end_dates <- as.Date(ferien$endDate)
   ferienintervall <- purrr::map2_vec(start_dates, end_dates, lubridate::interval)
-  return(ferienintervall)
-}
 
 
-# feiertage
-getHolidays_feiertag <- function(jahr = lubridate::year(lubridate::today()), pause = 5, progress){
-  Sys.sleep(pause)
+  Sys.sleep(1)
   incProgress(amount = progress)
-  url <- paste0("https://feiertage-api.de/api/?jahr=", jahr, "&nur_land=NI")
+  # feiertage
+  urlFeiertag <- glue::glue("https://openholidaysapi.org/PublicHolidays?countryIsoCode=DE&languageIsoCode=DE&validFrom={start}&validTo={end}&subdivisionCode=DE-NI")
   headers <- c("accept" = "application/json")
-
-  response <- httr::GET(url, headers = headers)
+  response <- httr::GET(urlFeiertag, headers = headers)
   json_response <- httr::content(response, "text", encoding = "UTF-8")
-  feiertage <- jsonlite::fromJSON(json_response, flatten = T)
-
-  feiertage <- purrr::map_vec(feiertage, ~lubridate::as_date(.x$datum[1])) |> unname()
-  feiertage <- purrr::map2_vec(feiertage, feiertage, lubridate::interval)
-
-  return(feiertage)
+  feiertag <- jsonlite::fromJSON(json_response)
+  start_dates <- as.Date(feiertag$startDate)
+  end_dates <- as.Date(feiertag$endDate)
+  feiertagintervall <- purrr::map2_vec(start_dates, end_dates, lubridate::interval)
+  return(c(ferienintervall, feiertagintervall))
 }
-
 
 
 

@@ -56,7 +56,7 @@ ui <- fluidPage(
   downloadButton("download_btn", "7. Generiere Tabelle"),
 
   hr(),
-  HTML("Referenz: <a href='https://ferien-api.de/'>Feriendaten</a> und <a href='https://feiertage-api.de/'>Feiertagsdaten</a>")
+  HTML("Referenz: <a href='https://www.openholidaysapi.org/en/'>Ferien- und Feiertagsdaten</a> unter <a href='https://raw.githubusercontent.com/openpotato/openholidaysapi.data/main/LICENSE'>dieser Lizenz</a>.")
 )
 
 # Define server
@@ -84,8 +84,8 @@ server <- function(input, output, session) {
   termine <- reactiveVal(0)
   ausfall <- reactiveVal(0)
   api <- reactiveVal(0)           # api results zwischenspeichern
-  halbjahrend <- reactiveVal(0)   # alte Einträge zum HJ wieder verwenden, wenn HJ-Zeitraum nachträglich verkleinert werden
-  halbjahranf <- reactiveVal(0)
+  #halbjahrend <- reactiveVal(0)   # alte Einträge zum HJ wieder verwenden, wenn HJ-Zeitraum nachträglich verkleinert werden
+  #halbjahranf <- reactiveVal(0)
 
   # remove freie tage zusätzlich from klassenarbeiten grenze Zeitbereich auf ausgewähltes Halbjahr ein
   observeEvent(input$halbjahr[2], {
@@ -103,29 +103,15 @@ server <- function(input, output, session) {
     }
 
     # Feiertage und Ferien abrufen (nur wenn dies nicht bereits geschehen)
-    if(api()[1] == 0 || year(halbjahrend()) < year(input$halbjahr[2]) || year(halbjahranf()) > year(input$halbjahr[1])){
-      if(year(input$halbjahr[1]) != year(input$halbjahr[2])){
-        withProgress(message = 'Mache API-Abfragen', value = 0.0, {
-          disable("klassenarbeiten")
-          ferienintervall <- c(getHolidays_schule(pause = 5, progress = .333),
-                               getHolidays_feiertag(year(input$halbjahr[1]), pause = 1, progress = .333),
-                               getHolidays_feiertag(year(input$halbjahr[2]), pause = 5, progress = .333))
-          api(ferienintervall)
-          halbjahrend(input$halbjahr[2])
-          halbjahranf(input$halbjahr[1])
-          enable("klassenarbeiten")
-        })
-      } else {
-        withProgress(message = 'Mache API-Abfrage', value = 0.0, {
-          disable("klassenarbeiten")
-          ferienintervall <- c(getHolidays_schule(pause = 5, progress = .5),
-                               getHolidays_feiertag(year(input$halbjahr[1]), pause = 1, progress = .5))
-          api(ferienintervall)
-          halbjahrend(input$halbjahr[2])
-          halbjahranf(input$halbjahr[1])
-          enable("klassenarbeiten")
-        })
-      }
+    if(api()[1] == 0){    #  || ymd(halbjahrend()) < ymd(input$halbjahr[2]) || ymd(halbjahranf()) > ymd(input$halbjahr[1])
+      withProgress(message = 'Mache API-Abfragen', value = 0.0, {
+        disable("klassenarbeiten")
+        ferienintervall <- getHolidays(start = ymd(floor_date(Sys.Date()- 7*8, 'year')), end = ceiling_date(ymd(input$halbjahr[2]), 'year'), pause = 2.5, progress = .5)
+        api(ferienintervall)
+        #halbjahrend(input$halbjahr[2])
+        #halbjahranf(input$halbjahr[1])
+        enable("klassenarbeiten")
+      })
     } else {
       ferienintervall <- api()    # sonst verwende bereits geladene Termine
     }
@@ -245,7 +231,7 @@ server <- function(input, output, session) {
         conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 2:(SuS+1), style = posStyle, rule = glue::glue('NOT(OR(ISNUMBER(SEARCH("Klausur", INDEX($1:$1,COLUMN()))), ISNUMBER(SEARCH("FREI", INDEX(1:1,COLUMN())))))'),
                               type = "expression")
         conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 2:(SuS+1), style = negStyle, rule = glue::glue('ISNUMBER(SEARCH("Klausur", INDEX($1:$1,COLUMN())))'),
-                                 type = "expression")
+                              type = "expression")
         conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 2:(SuS+1), style = neutralStyle, rule = glue::glue('ISNUMBER(SEARCH("FREI", INDEX($1:$1,COLUMN())))'),
                               type = "expression")
 
