@@ -52,8 +52,14 @@ ui <- fluidPage(
     labelWidth = "90px"
   ),
 
+  shinyWidgets::switchInput(
+    inputId = "rotate",
+    label = "7. rotieren",
+    value = FALSE,
+    labelWidth = "90px"
+  ),
   # Download button
-  downloadButton("download_btn", "7. Generiere Tabelle"),
+  downloadButton("download_btn", "8. Generiere Tabelle"),
 
   hr(),
   HTML("Referenz: <a href='https://www.openholidaysapi.org/en/'>Ferien- und Feiertagsdaten</a> unter <a href='https://raw.githubusercontent.com/openpotato/openholidaysapi.data/main/LICENSE'>dieser Lizenz</a>.")
@@ -191,11 +197,18 @@ server <- function(input, output, session) {
         addWorksheet(wb, "Noten")
         freezePane(wb, "Noten", firstActiveCol = 6)
         writeData(wb, "Noten", x = full)
-        setColWidths(wb, "Noten", cols = c(1:2, 6:ncol(full)), widths = "auto")
-        setRowHeights(wb, "Noten", rows = c(1), heights = c(40))
+        if(input$rotate == TRUE){
+          setColWidths(wb, "Noten", cols = c(1:2), widths = "auto")
+          setColWidths(wb, "Noten", cols = 6:ncol(full), widths = 5)
+          setRowHeights(wb, "Noten", rows = c(1), heights = c(80))
+          headerstyle <- createStyle(halign = "center", valign = "center", textRotation = -90, wrapText  = TRUE)
+        } else {
+          setColWidths(wb, "Noten", cols = c(1:2, 6:ncol(full)), widths = "auto")
+          setRowHeights(wb, "Noten", rows = c(1), heights = c(40))
+          headerstyle <- createStyle(halign = "center", valign = "center")
+        }
 
         # center headers
-        headerstyle <- createStyle(halign = "center", valign = "center")
         addStyle(wb, sheet = "Noten", headerstyle, rows = 1, cols = 1:ncol(full))
 
         # füge borderColor hinzu + jeweils für body and headers
