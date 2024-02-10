@@ -7,7 +7,7 @@ library(shinyjs)
 #library(bslib)
 source("getHolidays.R")
 wochentage <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
-
+names(wochentage) <- c("Mond", "Tues", "Wedn", "Thur", "Frid")
 # Define UI
 ui <- fluidPage(
   style = 'margin: 10px 15px',
@@ -22,8 +22,13 @@ ui <- fluidPage(
   # Numeric slider from 1 to 30
   sliderInput("sus", "1. Wie viele SuS?", min = 1, max = 30, value = 25),
 
-  # Selector with numbers 1 to 5
-  selectizeInput("turnus", "2. Turnus, z.B. jeden Montag", choices = wochentage, selected = "", multiple = T, options = list(maxItems = 5, placeholder ="Monday")),
+  # Selector with weekdays
+   shinyWidgets::checkboxGroupButtons(
+    inputId = "turnus",
+    label = "2. Turnus, z.B. jeden Montag",
+    choices = wochentage,
+    individual = TRUE),
+
 
   # select halbjahr
   radioButtons(
