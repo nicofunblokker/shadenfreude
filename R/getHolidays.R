@@ -1,17 +1,17 @@
 generateSchuljahr <- function(ferien){
-  sommer <- which(grepl("Sommer", ferien$name, ignore.case = T))
-  jahr <- ferien[sommer[1]:sommer[2],]
-  halbjahr <- which(grepl("Halb", jahr$name, ignore.case = T))
+  sommer <- which(grepl("Sommer|Halb", ferien$name, ignore.case = T))
+  jahr <- ferien[sommer[1]:sommer[3],]
+  halbjahr <- which(grepl("Sommer|Halb", jahr$name, ignore.case = T))[2]
   hj1_start <- ymd(jahr$endDate[1]) + lubridate::days(1)
   hj1_ende <- ymd(jahr$startDate[halbjahr]) - lubridate::days(1)
-
   hj2_start <- ymd(jahr$endDate[halbjahr]) + lubridate::days(1)
   hj2_ende <- ymd(tail(jahr$startDate, 1)) - lubridate::days(1)
 
-  # c(interval(hj1_start, hj1_ende),
-  #      interval(hj2_start, hj2_ende))
-  list('schuljahrenden' = c(hj1_ende, hj2_ende),
-       'schuljahranfaenge' = c(hj1_start, hj2_start))
+  # when Sommerferien auf der Hälfte liegen, dann sortiere absteigend
+  sorting <- ifelse(grepl("Sommer",jahr$name[halbjahr]), TRUE, FALSE)
+
+  list('schuljahrenden' = sort(c(hj1_ende, hj2_ende), decreasing = sorting),
+       'schuljahranfaenge' = sort(c(hj1_start, hj2_start), decreasing = sorting))
 }
 
 getHolidays <- function(start, end, pause = 5, progress){

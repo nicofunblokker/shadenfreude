@@ -81,7 +81,6 @@ server <- function(input, output, session) {
   })
 
   observeEvent(input$halbjahr, {
-    req(input$turnus)
     disable("halbjahr")
     disable("turnus")
     jahr <- today()
