@@ -43,6 +43,8 @@ ui <- fluidPage(
   shinyWidgets::airDatepickerInput("klassenarbeiten", "4. Klassenarbeitstermin(e)", multiple = T,
                                    firstDay =  1,
                                    clearButton = T,
+                                   addon = "none",
+                                   position = 'bottom right',
                                    disabledDates = c(0,6), minDate = Sys.Date() - 7, maxDate = Sys.Date()+182),
 
   # filename
