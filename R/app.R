@@ -6,7 +6,7 @@ library(dplyr)
 library(shinyjs)
 #library(bslib)
 source("getHolidays.R")
-source("turnus.R")
+
 wochentage <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 
 # Define UI
@@ -24,17 +24,17 @@ ui <- fluidPage(
   sliderInput("sus", "1. Wie viele SuS?", min = 1, max = 30, value = 25),
 
   # Selector with numbers 1 to 5
-  selectizeInput("number_selector", "2. Turnus, z.B. jeden Montag", choices = wochentage, selected = "", multiple = T, options = list(maxItems = 5, placeholder ="Monday")),
+  selectizeInput("turnus", "3. Turnus, z.B. jeden Montag", choices = wochentage, selected = "", multiple = T, options = list(maxItems = 5, placeholder ="Monday")),
 
-  # Date picker with start and end date. Default für Start nächster Montag
-  shinyWidgets::airDatepickerInput("halbjahr", "3. Halbjahr (Start - Ende)",
-                                   minDate = floor_date(Sys.Date(), "week") + days(1),
-                                   maxDate = Sys.Date()+180,
-                                   firstDay =  1,
-                                   range = T,
-                                   update_on = "close",
-                                   placeholder =  c(floor_date(Sys.Date(), "week") + days(1), Sys.Date()+182),
-                                   clearButton = T),
+
+  # select halbjahr
+  radioButtons(
+    inputId = "halbjahr",
+    label = "2. Halbjahr",
+    choices = c(1, 2),
+    selected = character(0),
+    inline = T
+  ),
 
   # date pickers with only one date
   shinyWidgets::airDatepickerInput("klassenarbeiten", "4. Klassenarbeitstermin(e)", multiple = T,
@@ -65,80 +65,62 @@ ui <- fluidPage(
   HTML("Referenz: <a href='https://www.openholidaysapi.org/en/'>Ferien- und Feiertagsdaten</a> unter <a href='https://raw.githubusercontent.com/openpotato/openholidaysapi.data/main/LICENSE'>dieser Lizenz</a>.")
 )
 
-# Define server
 server <- function(input, output, session) {
-  #bslib::bs_themer()
-  # disable turnus-selector, wenn halbjahr nicht gesetzt
-  observe({
-    req(input$number_selector)
-    if(is.null(input$halbjahr[2])){
-      shinyjs::enable("number_selector")
-    }
-  })
-
-  # update datepicker only allow ausgewählte wochentage
-  observeEvent(input$number_selector ,{
-    req(input$number_selector)
-    disabled_days <- which(!wochentage %in% input$number_selector)
-    shinyWidgets::updateAirDateInput(session = session, "halbjahr", options = list(
-      disabledDaysOfWeek = c(0,6,disabled_days),
-      update_on = "close",
-      minDate = floor_date(Sys.Date(), "week") - 7*8 + days(which(wochentage == input$number_selector[1]))))
-  })
-
+  disable("halbjahr")
+  disable("klassenarbeiten")
+  disable("download_btn")
   # reactive Values setzen
   termine <- reactiveVal(0)
   ausfall <- reactiveVal(0)
   api <- reactiveVal(0)           # api results zwischenspeichern
-  #halbjahrend <- reactiveVal(0)   # alte Einträge zum HJ wieder verwenden, wenn HJ-Zeitraum nachträglich verkleinert werden
-  #halbjahranf <- reactiveVal(0)
+  halbjahrend <- reactiveVal(0)   # alte Einträge zum HJ wieder verwenden, wenn HJ-Zeitraum nachträglich verkleinert werden
+  halbjahranf <- reactiveVal(0)
 
-  # remove freie tage zusätzlich from klassenarbeiten grenze Zeitbereich auf ausgewähltes Halbjahr ein
-  observeEvent(input$halbjahr[2], {
-    req(input$number_selector, input$halbjahr[2])
-    shinyjs::disable("number_selector")
+  observeEvent(input$turnus, {
+    enable("halbjahr")
+  })
 
-    # wenn ausgewählter Wochentag nicht dem ersten Turnustag entspricht, wird er automatisch angepasst
-    if(input$number_selector[1] != weekdays(ymd(input$halbjahr[1]))){
-      ersterTurnustag <- which(input$number_selector[1] == wochentage)
-      schulanfangneu <- lubridate::floor_date(ymd(input$halbjahr[1]), "week") + days(ersterTurnustag)
-      shinyWidgets::updateAirDateInput(session = session, "halbjahr",value = c(schulanfangneu, input$halbjahr[2]))
-      shinyjs::alert(glue::glue("Erster Turnuswochentag und erster Unterrichtstag stimmen nicht überein, setze {input$number_selector[1]} aus der Woche als Starttag ({schulanfangneu})."))
-    } else {
-      schulanfangneu <- input$halbjahr[1]
-    }
-
-    # Feiertage und Ferien abrufen (nur wenn dies nicht bereits geschehen)
-    if(api()[1] == 0){    #  || ymd(halbjahrend()) < ymd(input$halbjahr[2]) || ymd(halbjahranf()) > ymd(input$halbjahr[1])
+  observeEvent(input$halbjahr, {
+    req(input$turnus)
+    disable("halbjahr")
+    disable("turnus")
+    jahr <- today()
+    if(!is.list(api()[1])){
+      mindate <- floor_date(today(), "year")
+      maxdate <- ceiling_date(today(), "year") + years(1)
       withProgress(message = 'Mache API-Abfragen', value = 0.0, {
-        disable("klassenarbeiten")
-        ferienintervall <- getHolidays(start = ymd(floor_date(Sys.Date()- 7*8, 'year')), end = ceiling_date(ymd(input$halbjahr[2]), 'year'), pause = 2.5, progress = .5)
-        api(ferienintervall)
-        #halbjahrend(input$halbjahr[2])
-        #halbjahranf(input$halbjahr[1])
-        enable("klassenarbeiten")
+        ferienintervall <- getHolidays(start = mindate,
+                                       end = maxdate,
+                                       pause = 2.5,
+                                       progress = .5)
       })
+      api(ferienintervall)
     } else {
-      ferienintervall <- api()    # sonst verwende bereits geladene Termine
+      ferienintervall <- api()
     }
+    halbjahrend(ferienintervall[[2]]$schuljahrenden)
+    halbjahranf(ferienintervall[[2]]$schuljahranfaenge)
 
-    # turnusgemäße Termine ermitteln
-    termine <- turnus2dates(input$number_selector, schulanfang = as.character(schulanfangneu), schulende = as.character(input$halbjahr[2]))
+    hjr <- as.numeric(input$halbjahr)
+    end <- halbjahrend()[hjr]
+    anf <- halbjahranf()[hjr]
+    tage <- as.Date(anf:end)
+    turnus <- which(wochentage  %in% input$turnus)
+    turnustage <- tage[which(lubridate::wday(tage, week_start = 1) %in% turnus)]
+    ausfall(sapply(turnustage, function(x) any(x %within% api()[[1]])))
+    termine(format(turnustage, "%a %d-%m-%y"))
+    enable("halbjahr")
+    enable("turnus")
+    enable("klassenarbeiten")
 
-    # Feiertage ermitteln
-    ausfall <- sapply(termine, function(x) any(x %within% ferienintervall))
-
-    # reactive values auffüllen
-    ausfall(ausfall)
-    termine(format(termine, "%a %d-%m-%y"))
-
-    # update slider
-    disabled_days <- which(!wochentage %in% input$number_selector)
+    disabled_days <- which(!wochentage %in% input$turnus)
     shinyWidgets::updateAirDateInput(session = session, "klassenarbeiten", options = list(
       disabledDaysOfWeek = c(0,6,disabled_days),
-      disabledDates = format(dmy(termine()[ausfall()]), "%Y-%m-%d"),
-      minDate = schulanfangneu, maxDate = input$halbjahr[2]))
+      disabledDates = ymd(tage[ausfall()]),
+      minDate = anf, maxDate = end))
+    enable("download_btn")
   })
+
 
   # Download button logic
   output$download_btn <- downloadHandler(
@@ -156,14 +138,13 @@ server <- function(input, output, session) {
         # datensatz kreieren
         empty <- data.frame(matrix(ncol = length(termine()), nrow = SuS))
         colnames(empty) <- termine()
-
+        #browser()
         # wenn keine Klassenarbeiten gewählt, mache nichts
         if(length(klassenarbeiten) != "character(0)"){
           klassenarbeiten <- format(ymd(klassenarbeiten), "%a %d-%m-%y")
           klassenarbeitsdaten <- which(colnames(empty) %in% klassenarbeiten)
           colnames(empty)[klassenarbeitsdaten] <- paste("Klausur\n", colnames(empty)[klassenarbeitsdaten])
         }
-
         if(any(colnames(empty) %in% termine()[ausfall()])){
           frei <- which(colnames(empty) %in% termine()[ausfall()])
           colnames(empty)[frei] <- paste("FREI", colnames(empty)[frei])
@@ -194,28 +175,29 @@ server <- function(input, output, session) {
 
         ## Notebook erstellen
         wb <- createWorkbook()
-        addWorksheet(wb, "Noten")
-        freezePane(wb, "Noten", firstActiveCol = 6)
-        writeData(wb, "Noten", x = full)
+        namehjr <- glue::glue("Noten_HBJ{input$halbjahr}")
+        addWorksheet(wb, namehjr)
+        freezePane(wb, namehjr, firstActiveCol = 6)
+        writeData(wb, namehjr, x = full)
         if(input$rotate == TRUE){
-          setColWidths(wb, "Noten", cols = c(1:2), widths = "auto")
-          setColWidths(wb, "Noten", cols = 6:ncol(full), widths = 5)
-          setRowHeights(wb, "Noten", rows = c(1), heights = c(80))
+          setColWidths(wb, namehjr, cols = c(1:2), widths = "auto")
+          setColWidths(wb, namehjr, cols = 6:ncol(full), widths = 5)
+          setRowHeights(wb, namehjr, rows = c(1), heights = c(80))
           headerstyle <- createStyle(halign = "center", valign = "center", textRotation = -90, wrapText  = TRUE)
         } else {
-          setColWidths(wb, "Noten", cols = c(1:2, 6:ncol(full)), widths = "auto")
-          setRowHeights(wb, "Noten", rows = c(1), heights = c(40))
+          setColWidths(wb, namehjr, cols = c(1:2, 6:ncol(full)), widths = "auto")
+          setRowHeights(wb, namehjr, rows = c(1), heights = c(40))
           headerstyle <- createStyle(halign = "center", valign = "center")
         }
 
         # center headers
-        addStyle(wb, sheet = "Noten", headerstyle, rows = 1, cols = 1:ncol(full))
+        addStyle(wb, sheet = namehjr, headerstyle, rows = 1, cols = 1:ncol(full))
 
         # füge borderColor hinzu + jeweils für body and headers
         bodyStyle <- createStyle(fgFill = 'grey95', border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65', halign = "center", valign = "center")
-        addStyle(wb, sheet = "Noten", bodyStyle, rows = 1:(SuS+1), cols = 1:5, gridExpand = TRUE)
+        addStyle(wb, sheet = namehjr, bodyStyle, rows = 1:(SuS+1), cols = 1:5, gridExpand = TRUE)
         bodyStyle2 <- createStyle(fgFill = 'grey90', border = c("top","bottom","left","right"), borderStyle = c('thin','thick','thin','thin'), borderColour = 'grey45', halign = "center", valign = "center")
-        addStyle(wb, sheet = "Noten", bodyStyle2, rows = 1, cols = 1:5, gridExpand = TRUE)
+        addStyle(wb, sheet = namehjr, bodyStyle2, rows = 1, cols = 1:5, gridExpand = TRUE)
 
         # Style festlegen
         neutralStyle <- createStyle(bgFill = "grey", borderColour = 'grey', border = "TopBottomLeftRight", borderStyle = 'thin')
@@ -229,49 +211,53 @@ server <- function(input, output, session) {
 
         # header regeln für gesamte reihe
         idx0 <- 6:ncol(full)
-        conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = posStyleH1, rule = "Klausur",
+        conditionalFormatting(wb, sheet =  namehjr, cols = idx0, rows = 1, style = posStyleH1, rule = "Klausur",
                               type = "notContains")
-        conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = posStyleH1, rule = "Frei",
+        conditionalFormatting(wb, sheet =  namehjr, cols = idx0, rows = 1, style = posStyleH1, rule = "Frei",
                               type = "notContains")
-        conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = negStyleH1, rule = "Klausur",
+        conditionalFormatting(wb, sheet =  namehjr, cols = idx0, rows = 1, style = negStyleH1, rule = "Klausur",
                               type = "contains")
-        conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = neutralStyleH1, rule = "Frei",
+        conditionalFormatting(wb, sheet =  namehjr, cols = idx0, rows = 1, style = neutralStyleH1, rule = "Frei",
                               type = "contains")
 
         incProgress(amount = 1/3)
 
         # body regeln für gesamte Spalten
-        conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 2:(SuS+1), style = posStyle, rule = glue::glue('NOT(OR(ISNUMBER(SEARCH("Klausur", INDEX($1:$1,COLUMN()))), ISNUMBER(SEARCH("FREI", INDEX(1:1,COLUMN())))))'),
+        conditionalFormatting(wb, sheet =  namehjr, cols = idx0, rows = 2:(SuS+1), style = posStyle, rule = glue::glue('NOT(OR(ISNUMBER(SEARCH("Klausur", INDEX($1:$1,COLUMN()))), ISNUMBER(SEARCH("FREI", INDEX(1:1,COLUMN())))))'),
                               type = "expression")
-        conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 2:(SuS+1), style = negStyle, rule = glue::glue('ISNUMBER(SEARCH("Klausur", INDEX($1:$1,COLUMN())))'),
+        conditionalFormatting(wb, sheet =  namehjr, cols = idx0, rows = 2:(SuS+1), style = negStyle, rule = glue::glue('ISNUMBER(SEARCH("Klausur", INDEX($1:$1,COLUMN())))'),
                               type = "expression")
-        conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 2:(SuS+1), style = neutralStyle, rule = glue::glue('ISNUMBER(SEARCH("FREI", INDEX($1:$1,COLUMN())))'),
+        conditionalFormatting(wb, sheet =  namehjr, cols = idx0, rows = 2:(SuS+1), style = neutralStyle, rule = glue::glue('ISNUMBER(SEARCH("FREI", INDEX($1:$1,COLUMN())))'),
                               type = "expression")
 
         incProgress(amount = 2/3)
 
 
         # body regeln für alle spalten ab spalte 6 incl.
-        conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 2:(SuS+1), style = createStyle(bgFill = "white"), rule = ">6",
+        conditionalFormatting(wb, sheet =  namehjr, cols = idx0, rows = 2:(SuS+1), style = createStyle(bgFill = "white"), rule = ">6",
                               type = "expression")
-        conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 2:(SuS+1), style = createStyle(bgFill = "white"), rule = "<0",
+        conditionalFormatting(wb, sheet =  namehjr, cols = idx0, rows = 2:(SuS+1), style = createStyle(bgFill = "white"), rule = "<0",
                               type = "expression")
-        conditionalFormatting(wb, sheet =  "Noten", cols = idx0, rows = 1, style = createStyle(bgFill = "white", border = "Bottom", borderStyle = 'thin'), rule = "-",
+        conditionalFormatting(wb, sheet =  namehjr, cols = idx0, rows = 1, style = createStyle(bgFill = "white", border = "Bottom", borderStyle = 'thin'), rule = "-",
                               type = "notContains")
 
         incProgress(amount = 3/3)
 
         # notenspiegel
         notenspiegel <- data.frame(Note = 1:6, Anzahl = sprintf('=COUNTIFS(Noten!C%d:Noten!C%d, ">%d,5", Noten!C%d:Noten!C%d, "<=%d,5")', 2, SuS+1, 0:5, 2, SuS+1, 1:6))
+        notenspiegel$Anzahl <- gsub("Noten", namehjr, notenspiegel$Anzahl)
         class(notenspiegel$Anzahl) <- c(class(notenspiegel$Anzahl), "formula")
-        addWorksheet(wb, "Notenspiegel")
-        writeData(wb, "Notenspiegel", x = notenspiegel)
+        addWorksheet(wb, glue::glue("Notenspiegel_HBJ{input$halbjahr}"))
+        writeData(wb, glue::glue("Notenspiegel_HBJ{input$halbjahr}"), x = notenspiegel)
         # speichern
         saveWorkbook(wb, file, overwrite = TRUE)
       }
       )
     })
+
+
+
 }
 
-# Run the app
 shinyApp(ui, server)
+
