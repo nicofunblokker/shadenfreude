@@ -24,13 +24,13 @@ ui <- fluidPage(
   sliderInput("sus", "1. Wie viele SuS?", min = 1, max = 30, value = 25),
 
   # Selector with numbers 1 to 5
-  selectizeInput("turnus", "3. Turnus, z.B. jeden Montag", choices = wochentage, selected = "", multiple = T, options = list(maxItems = 5, placeholder ="Monday")),
+  selectizeInput("turnus", "2. Turnus, z.B. jeden Montag", choices = wochentage, selected = "", multiple = T, options = list(maxItems = 5, placeholder ="Monday")),
 
 
   # select halbjahr
   radioButtons(
     inputId = "halbjahr",
-    label = "2. Halbjahr",
+    label = "3. Halbjahr",
     choices = c(1, 2),
     selected = character(0),
     inline = T
