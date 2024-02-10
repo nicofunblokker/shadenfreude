@@ -4,14 +4,14 @@ library(openxlsx)
 library(lubridate)
 library(dplyr)
 library(shinyjs)
-#library(bslib)
+library(bslib)
 source("getHolidays.R")
 wochentage <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
-names(wochentage) <- c("Mo", "Tu", "We", "Th", "Fr")
+names(wochentage) <- c("Mon", "Tue", "Wed", "Thu", "Fri")
 # Define UI
-ui <- fluidPage(
+ui <- page_fluid(
+  theme = bs_theme(bootswatch = "flatly", primary = "#3498db", secondary = "#2c3e50"),
   style = 'margin: 10px 15px',
-  #theme = bs_theme(preset = "shiny"),
   shinyjs::useShinyjs(),
   titlePanel("Notentabelle"),
 
@@ -20,7 +20,7 @@ ui <- fluidPage(
   br(),
 
   # Numeric slider from 1 to 30
-  sliderInput("sus", "1. Wie viele SuS?", min = 1, max = 30, value = 25),
+  sliderInput("sus", "1. Anzahl SuS", min = 1, max = 30, value = 25),
 
   # Selector with weekdays
    shinyWidgets::checkboxGroupButtons(
@@ -33,7 +33,7 @@ ui <- fluidPage(
                  lib = "glyphicon"),
       no = icon("remove",
                 lib = "glyphicon")),
-    size = "normal",
+    size = "sm",
     individual = FALSE),
 
 
