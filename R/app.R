@@ -7,7 +7,7 @@ library(shinyjs)
 #library(bslib)
 source("getHolidays.R")
 wochentage <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
-names(wochentage) <- c("Mond", "Tues", "Wedn", "Thur", "Frid")
+names(wochentage) <- c("Mond", "Tues", "Wed", "Thur", "Fri")
 # Define UI
 ui <- fluidPage(
   style = 'margin: 10px 15px',
@@ -27,7 +27,14 @@ ui <- fluidPage(
     inputId = "turnus",
     label = "2. Turnus, z.B. jeden Montag",
     choices = wochentage,
-    individual = TRUE),
+    status = "primary",
+    checkIcon = list(
+      yes = icon("ok",
+                 lib = "glyphicon"),
+      no = icon("remove",
+                lib = "glyphicon")),
+    size = "sm",
+    individual = FALSE),
 
 
   # select halbjahr
@@ -88,6 +95,11 @@ server <- function(input, output, session) {
     } else {
       enable("halbjahr")
       enable("turnus")
+    }
+
+    if(length(input$turnus) == 0){
+      disable("download_btn")
+      disable("klassenarbeiten")
     }
   })
 
