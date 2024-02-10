@@ -6,7 +6,6 @@ library(dplyr)
 library(shinyjs)
 #library(bslib)
 source("getHolidays.R")
-
 wochentage <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 
 # Define UI
@@ -25,7 +24,6 @@ ui <- fluidPage(
 
   # Selector with numbers 1 to 5
   selectizeInput("turnus", "2. Turnus, z.B. jeden Montag", choices = wochentage, selected = "", multiple = T, options = list(maxItems = 5, placeholder ="Monday")),
-
 
   # select halbjahr
   radioButtons(
@@ -119,7 +117,6 @@ server <- function(input, output, session) {
       minDate = anf, maxDate = end))
     enable("download_btn")
   })
-
 
   # Download button logic
   output$download_btn <- downloadHandler(
@@ -231,7 +228,6 @@ server <- function(input, output, session) {
 
         incProgress(amount = 2/3)
 
-
         # body regeln für alle spalten ab spalte 6 incl.
         conditionalFormatting(wb, sheet =  namehjr, cols = idx0, rows = 2:(SuS+1), style = createStyle(bgFill = "white"), rule = ">6",
                               type = "expression")
@@ -253,9 +249,6 @@ server <- function(input, output, session) {
       }
       )
     })
-
-
-
 }
 
 shinyApp(ui, server)

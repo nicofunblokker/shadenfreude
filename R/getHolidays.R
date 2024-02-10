@@ -31,7 +31,6 @@ getHolidays <- function(start, end, pause = 5, progress){
   # sets boundaries
   boundaries <- generateSchuljahr(ferien)
 
-
   Sys.sleep(1)
   incProgress(amount = progress)
   # feiertage
