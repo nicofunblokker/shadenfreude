@@ -7,7 +7,7 @@ library(shinyjs)
 #library(bslib)
 source("getHolidays.R")
 wochentage <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
-names(wochentage) <- c("Mond", "Tues", "Wed", "Thur", "Fri")
+names(wochentage) <- c("Mo", "Tu", "We", "Th", "Fr")
 # Define UI
 ui <- fluidPage(
   style = 'margin: 10px 15px',
@@ -33,7 +33,7 @@ ui <- fluidPage(
                  lib = "glyphicon"),
       no = icon("remove",
                 lib = "glyphicon")),
-    size = "sm",
+    size = "normal",
     individual = FALSE),
 
 
