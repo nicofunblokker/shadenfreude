@@ -31,7 +31,7 @@ ui <- fluidPage(
   radioButtons(
     inputId = "halbjahr",
     label = "3. Halbjahr",
-    choices = c(1, 2),
+    choices = c("1. HBJ (Sommer)" = 1, "2. HBJ (Winter)" =  2),
     selected = character(0),
     inline = T
   ),
