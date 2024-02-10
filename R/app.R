@@ -105,6 +105,7 @@ server <- function(input, output, session) {
     turnus <- which(wochentage  %in% input$turnus)
     turnustage <- tage[which(lubridate::wday(tage, week_start = 1) %in% turnus)]
     ausfall(sapply(turnustage, function(x) any(x %within% api()[[1]])))
+    #print(tage[ausfall()])
     termine(format(turnustage, "%a %d-%m-%y"))
     enable("halbjahr")
     enable("turnus")
@@ -113,7 +114,7 @@ server <- function(input, output, session) {
     disabled_days <- which(!wochentage %in% input$turnus)
     shinyWidgets::updateAirDateInput(session = session, "klassenarbeiten", options = list(
       disabledDaysOfWeek = c(0,6,disabled_days),
-      disabledDates = ymd(tage[ausfall()]),
+      disabledDates = ymd(turnustage[ausfall()]),
       minDate = anf, maxDate = end))
     enable("download_btn")
   })
