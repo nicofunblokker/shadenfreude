@@ -52,16 +52,16 @@ ui <- fluidPage(
 
   shinyWidgets::switchInput(
     inputId = "holiday",
-    label = "6. freie Tage",
+    label = "6. freie Tage anzeigen",
     value = FALSE,
-    labelWidth = "90px"
+    labelWidth = "220px"
   ),
 
   shinyWidgets::switchInput(
     inputId = "rotate",
-    label = "7. rotieren",
+    label = "7. Spaltennamen rotieren",
     value = FALSE,
-    labelWidth = "90px"
+    labelWidth = "220px"
   ),
   # Download button
   downloadButton("download_btn", "8. Generiere Tabelle"),
@@ -81,8 +81,19 @@ server <- function(input, output, session) {
   halbjahrend <- reactiveVal(0)   # alte Einträge zum HJ wieder verwenden, wenn HJ-Zeitraum nachträglich verkleinert werden
   halbjahranf <- reactiveVal(0)
 
+  observe({
+    if(!is.null(input$klassenarbeiten)){
+      disable("halbjahr")
+      disable("turnus")
+    } else {
+      enable("halbjahr")
+      enable("turnus")
+    }
+  })
+
   observeEvent(input$turnus, {
     enable("halbjahr")
+    # shinyWidgets::updateAirDateInput(session = session, "klassenarbeiten", clear = T) # this is how it can be "reset"
   })
 
   observeEvent(c(input$halbjahr, input$turnus), {
