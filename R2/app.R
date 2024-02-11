@@ -48,12 +48,12 @@ ui <- page_fluid(
 
 
   # select halbjahr
-  radioButtons(
+  shinyWidgets::radioGroupButtons(
     inputId = "halbjahr",
     label = "3. Halbjahr",
-    choices = choices,
+    choices = sort(choices, decreasing = halbjahr1 > (halbjahr2-1)),
     selected = character(0),
-    inline = T
+    #inline = T
   ),
 
   # date pickers with only one date
