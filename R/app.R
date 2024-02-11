@@ -8,6 +8,15 @@ library(bslib)
 source("getHolidays.R")
 wochentage <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 names(wochentage) <- c("Mon", "Tue", "Wed", "Thu", "Fri")
+
+# prepare choice for halbjahr (cut-off for display is generally 01.07.2024)
+halbjahr1 <- floor_date(today(), 'halfyear') |> year()
+halbjahr1 <- as.numeric(gsub("^\\d{2}", "", halbjahr1))
+halbjahr2 <- ceiling_date(today(), 'halfyear') |> year()
+halbjahr2 <- as.numeric(gsub("^\\d{2}", "", halbjahr2))
+choices <- 1:2
+names(choices) <- c(glue::glue('1. (Sommer {halbjahr1}/{halbjahr1+1})'), glue::glue('2. (Winter {halbjahr2-1}/{halbjahr2})'))
+
 # Define UI
 ui <- page_fluid(
   theme = bs_theme(bootswatch = "flatly", primary = "#3498db", secondary = "#2c3e50"),
@@ -41,7 +50,7 @@ ui <- page_fluid(
   radioButtons(
     inputId = "halbjahr",
     label = "3. Halbjahr",
-    choices = c("1. HBJ (Sommer)" = 1, "2. HBJ (Winter)" =  2),
+    choices = choices,
     selected = character(0),
     inline = T
   ),
@@ -114,8 +123,8 @@ server <- function(input, output, session) {
     disable("turnus")
     jahr <- today()
     if(!is.list(api()[1])){
-      mindate <- floor_date(today(), "year")
-      maxdate <- ceiling_date(today(), "year") + years(1)
+      mindate <- floor_date(jahr, "halfyear")
+      maxdate <- ceiling_date(jahr, "halfyear") + years(1)
       withProgress(message = 'Mache API-Abfragen', value = 0.0, {
         ferienintervall <- getHolidays(start = mindate,
                                        end = maxdate,
