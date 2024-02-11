@@ -21,10 +21,12 @@ names(choices) <- c(glue::glue('1. (Sommer {halbjahr1}/{halbjahr1+1})'), glue::g
 # Define UI
 ui <- page_fluid(
   theme = bs_theme(bootswatch = "flatly", primary = "#3498db", secondary = "#2c3e50"),
+  div(style = "float:right; padding-right: 30px;",
+      input_dark_mode(id = "dark_mode", mode = "dark")
+  ),
   style = 'margin: 10px 15px',
   shinyjs::useShinyjs(),
   titlePanel("Notentabelle v2"),
-
   HTML('Schritte bitte nacheinander ausfüllen.<br> Im Zweifel neuladen.'),
   br(),
   br(),
