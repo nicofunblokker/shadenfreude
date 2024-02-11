@@ -9,10 +9,11 @@ source("getHolidays.R")
 wochentage <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 names(wochentage) <- c("Mon", "Tue", "Wed", "Thu", "Fri")
 
-# prepare choice for halbjahr (cut-off for display is generally 01.07.2024)
-halbjahr1 <- floor_date(today(), 'halfyear') |> year()
+# prepare choice for halbjahr (cut-off for display is generally july&january)
+jahr <- today()
+halbjahr1 <- floor_date(jahr, 'halfyear') |> year()
 halbjahr1 <- as.numeric(gsub("^\\d{2}", "", halbjahr1))
-halbjahr2 <- ceiling_date(today(), 'halfyear') |> year()
+halbjahr2 <- ceiling_date(jahr, 'halfyear') |> year()
 halbjahr2 <- as.numeric(gsub("^\\d{2}", "", halbjahr2))
 choices <- 1:2
 names(choices) <- c(glue::glue('1. (Sommer {halbjahr1}/{halbjahr1+1})'), glue::glue('2. (Winter {halbjahr2-1}/{halbjahr2})'))
@@ -121,7 +122,7 @@ server <- function(input, output, session) {
     req(input$halbjahr, input$turnus)
     disable("halbjahr")
     disable("turnus")
-    jahr <- today()
+    #jahr <- today()   # oben festgelegt
     if(!is.list(api()[1])){
       mindate <- floor_date(jahr, "halfyear")
       maxdate <- ceiling_date(jahr, "halfyear") + years(1)
