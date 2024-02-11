@@ -61,6 +61,7 @@ ui <- page_fluid(
                                    firstDay =  1,
                                    clearButton = T,
                                    addon = "none",
+                                   readonly = T,
                                    position = 'bottom right',
                                    disabledDates = c(0,6), minDate = Sys.Date() - 7, maxDate = Sys.Date()+182),
 
