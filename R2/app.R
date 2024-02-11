@@ -23,7 +23,7 @@ ui <- page_fluid(
   theme = bs_theme(bootswatch = "flatly", primary = "#3498db", secondary = "#2c3e50"),
   style = 'margin: 10px 15px',
   shinyjs::useShinyjs(),
-  titlePanel("Notentabelle"),
+  titlePanel("Notentabelle v2"),
 
   HTML('Schritte bitte nacheinander ausfüllen.<br> Im Zweifel neuladen.'),
   br(),
