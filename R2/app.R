@@ -259,6 +259,16 @@ server <- function(input, output, session) {
         conditionalFormatting(wb, sheet =  namehjr, cols = idx0, rows = 1, style = neutralStyleH1, rule = "Frei",
                               type = "contains")
 
+        # add data validation (only 1-6 for date cells)
+        dataValidation(wb,
+                       sheet =  namehjr, cols = idx0, rows = 2:(SuS+1),
+                       type = "decimal", operator = "between", value = c(1, 6))   # use decimal for exam grades
+        # hacky way to prevent overwriting formula by disallowing values with textlength < 31
+        dataValidation(wb,
+                       sheet =  namehjr, cols = 3:5, rows = 2:(SuS+1),
+                       type = "textLength", operator = "greaterThan", value = 30)
+
+
         incProgress(amount = 1/3)
 
         # body regeln für gesamte Spalten
@@ -287,6 +297,8 @@ server <- function(input, output, session) {
         class(notenspiegel$Anzahl) <- c(class(notenspiegel$Anzahl), "formula")
         addWorksheet(wb, glue::glue("Notenspiegel_HBJ{input$halbjahr}"))
         writeData(wb, glue::glue("Notenspiegel_HBJ{input$halbjahr}"), x = notenspiegel)
+        # disallow editing
+        protectWorksheet(wb, glue::glue("Notenspiegel_HBJ{input$halbjahr}"), protect = TRUE)
         # speichern
         saveWorkbook(wb, file, overwrite = TRUE)
       }
