@@ -22,7 +22,7 @@ names(choices) <- c(glue::glue('1. (Sommer {halbjahr1}/{halbjahr1+1})'), glue::g
 ui <- page_fluid(
   theme = bs_theme(bootswatch = "flatly", primary = "#3498db", secondary = "#2c3e50"),
   div(style = "float:right; padding-right: 30px;",
-      input_dark_mode(id = "dark_mode", mode = "dark")
+      input_dark_mode(id = "dark_mode", mode = "light")
   ),
   style = 'margin: 10px 15px',
   shinyjs::useShinyjs(),
@@ -292,6 +292,9 @@ server <- function(input, output, session) {
                               type = "notContains")
 
         incProgress(amount = 3/3)
+
+        #remove gridlines
+        showGridLines(wb, namehjr, showGridLines = FALSE)
 
         # notenspiegel
         notenspiegel <- data.frame(Note = 1:6, Anzahl = sprintf('=COUNTIFS(Noten!C%d:Noten!C%d, ">%d,5", Noten!C%d:Noten!C%d, "<=%d,5")', 2, SuS+1, 0:5, 2, SuS+1, 1:6))
