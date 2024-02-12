@@ -287,7 +287,7 @@ server <- function(input, output, session) {
         # body regeln für alle spalten ab spalte 6 incl.
         conditionalFormatting(wb, sheet =  namehjr, cols = idx0, rows = 2:(SuS+1), style = createStyle(bgFill = "white"), rule = ">6",
                               type = "expression")
-        conditionalFormatting(wb, sheet =  namehjr, cols = idx0, rows = 2:(SuS+1), style = createStyle(bgFill = "white"), rule = "<0",
+        conditionalFormatting(wb, sheet =  namehjr, cols = idx0, rows = 2:(SuS+1), style = createStyle(bgFill = "white"), rule = '=AND(NOT(ISBLANK(F2)), F2 < 1)',   # not blank but below 1
                               type = "expression")
         conditionalFormatting(wb, sheet =  namehjr, cols = idx0, rows = 1, style = createStyle(bgFill = "white", border = "Bottom", borderStyle = 'thin'), rule = "-",
                               type = "notContains")
