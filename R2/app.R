@@ -5,6 +5,7 @@ library(lubridate)
 library(dplyr)
 library(shinyjs)
 library(bslib)
+source("documentationSheet.R")
 source("getHolidays.R")
 wochentage <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 names(wochentage) <- c("Mon", "Tue", "Wed", "Thu", "Fri")
@@ -304,6 +305,12 @@ server <- function(input, output, session) {
         writeData(wb, glue::glue("Notenspiegel_HBJ{input$halbjahr}"), x = notenspiegel)
         # disallow editing
         protectWorksheet(wb, glue::glue("Notenspiegel_HBJ{input$halbjahr}"), protect = TRUE)
+
+
+        # documentation
+        x <- sort(choices, decreasing = halbjahr1 > (halbjahr2-1))[as.numeric(input$halbjahr)]
+        wb <- doku(wb = wb, nsus=  input$sus, ntermine=length(6:ncol(full)), turnust=input$turnus, halbjr = names(x))
+
         # speichern
         saveWorkbook(wb, file, overwrite = TRUE)
       }
