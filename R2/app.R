@@ -308,8 +308,7 @@ server <- function(input, output, session) {
 
 
         # documentation
-        x <- sort(choices, decreasing = halbjahr1 > (halbjahr2-1))[as.numeric(input$halbjahr)]
-        wb <- doku(wb = wb, nsus=  input$sus, ntermine=length(6:ncol(full)), turnust=input$turnus, halbjr = names(x))
+        wb <- doku(wb = wb, nsus=  input$sus, ntermine=length(6:ncol(full)), turnust=input$turnus, halbjr = names(choices[as.numeric(input$halbjahr)]), sheetname = glue::glue("Dokumentation_HBJ{input$halbjahr}"))
 
         # speichern
         saveWorkbook(wb, file, overwrite = TRUE)
