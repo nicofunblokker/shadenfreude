@@ -308,7 +308,13 @@ server <- function(input, output, session) {
 
 
         # documentation
-        wb <- doku(wb = wb, nsus=  input$sus, ntermine=length(6:ncol(full)), turnust=input$turnus, halbjr = names(choices[as.numeric(input$halbjahr)]), sheetname = glue::glue("Dokumentation_HBJ{input$halbjahr}"))
+        wb <- doku(wb = wb,
+                   #nsus=  input$sus,
+                   #ntermine=length(6:ncol(full)),
+                   turnust=input$turnus,
+                   halbjr = names(choices[as.numeric(input$halbjahr)]),
+                   sheetname = glue::glue("Dokumentation_HBJ{input$halbjahr}"),
+                   notensheet = namehjr)
 
         # speichern
         saveWorkbook(wb, file, overwrite = TRUE)
