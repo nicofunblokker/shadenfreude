@@ -337,19 +337,17 @@ server <- function(input, output, session) {
           writeData(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), x = abwesendheit, startCol = 1, startRow = 1)
 
           # add average
-          #browser()
-          # avg_abwesend = sprintf(glue::glue('="Ø " & ROUND(AVERAGE(D2:D%d), 2)'), (SuS+1))
-          # avg_percent = sprintf(glue::glue('="Ø " & IFERROR(ROUND(AVERAGE(E2:E%d), 2), "")'), (SuS+1))
-          # averages <- data.frame(avg_abwesend, avg_percent)
-          # for(i in c(1:2)){
-          #   class(averages[,i]) <- c(class(averages[,i]), "formula")
-          # }
-          # print(avg_abwesend)
-          #addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(halign = "right", fg = "grey80"), rows = SuS+2, cols = 4:5, gridExpand = TRUE)
-          #writeData(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), x = averages, startCol = 4, startRow = SuS+2, colNames = FALSE)
+          avg_abwesend = sprintf(glue::glue('="Ø " & ROUND(SUMPRODUCT(VALUE(LEFT(D2:D%d, FIND("(", D2:D%d)-1))), 2) / COUNTA(D2:D%d)'), (SuS+1), (SuS+1), (SuS+1))
+          avg_percent = sprintf(glue::glue('="Ø " & IFERROR(ROUND(AVERAGE(E2:E%d), 2), "")'), (SuS+1))
+          averages <- data.frame(avg_abwesend, avg_percent)
+          for(i in c(1:2)){
+            class(averages[,i]) <- c(class(averages[,i]), "formula")
+          }
+          addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(halign = "right", fg = "grey80"), rows = SuS+2, cols = 4:5, gridExpand = TRUE)
+          writeData(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), x = averages, startCol = 4, startRow = SuS+2, colNames = FALSE)
 
           # add limitation note
-          writeData(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), x = data.frame("Hinweis" = c("*Einträge in der Notentabelle mit '0' gelten als abwesend, '-1' als unentschuldigt (in Klammern angegeben).", "**Neuzugänge und Abgänge müssen händisch hinzugefügt werden.")), startCol = 1, startRow = SuS+3, colNames = FALSE)
+          writeData(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), x = data.frame("Hinweis" = c("*Einträge in der Notentabelle mit '0' gelten als abwesend, '-1' als unentschuldigt (in Klammern angegeben).", "**Neuzugänge und Abgänge müssen händisch hinzugefügt und Formel ggfs. angepasst werden.")), startCol = 1, startRow = SuS+3, colNames = FALSE)
 
           # disallow editing
           protectWorksheet(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), protect = TRUE)
