@@ -84,8 +84,15 @@ ui <- page_fluid(
     value = FALSE,
     labelWidth = "220px"
   ),
+
+  shinyWidgets::switchInput(
+    inputId = "abwesend",
+    label = "9. Abwesendheitssheet",
+    value = TRUE,
+    labelWidth = "220px"
+  ),
   # Download button
-  downloadButton("download_btn", "8. Generiere Tabelle"),
+  downloadButton("download_btn", "9. Generiere Tabelle"),
 
   hr(),
   HTML("Referenz: <a href='https://www.openholidaysapi.org/en/'>Ferien- und Feiertagsdaten</a> unter <a href='https://raw.githubusercontent.com/openpotato/openholidaysapi.data/main/LICENSE'>dieser Lizenz</a>.")
@@ -310,23 +317,29 @@ server <- function(input, output, session) {
         protectWorksheet(wb, glue::glue("Notenspiegel_HBJ{input$halbjahr}"), protect = TRUE)
 
         # abwesenheitszeiten
-        addWorksheet(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"))
-        Name = sprintf(glue::glue('=IFERROR({namehjr}!B%d, "")'), 2:(SuS+1))
-        Abwesend = sprintf(glue::glue('=IFERROR(COUNTIF({namehjr}!F%d:{to}%d, 0), "")'), 2:(SuS+1), 2:(SuS+1))
-        Sitzungen = sprintf(glue::glue('=IFERROR(COUNTA({namehjr}!F%d:{to}%d), "")'), 2:(SuS+1), 2:(SuS+1))
-        Prozent = sprintf(glue::glue('=IFERROR(ROUND(COUNTIF({namehjr}!F%d:{to}%d, 0) / COUNTA({namehjr}!F%d:{to}%d), 2), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
-        abwesendheit <- data.frame(Name, Sitzungen, Abwesend, Prozent)
-        for(i in c(1:4)){
-          class(abwesendheit[,i]) <- c(class(abwesendheit[,i]), "formula")
-        }
-        addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(fgFill = 'grey95', textDecoration ="bold", border = "BottomTopRightLeft", borderColour = c("grey65", "grey95","grey95","grey95" ), borderStyle = "thick"), rows = 1, cols = 1:4, gridExpand = TRUE)
-        addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(fgFill = 'grey95'), rows = 2:(SuS+1), cols = 1:4, gridExpand = TRUE)
-        writeData(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), x = abwesendheit, startCol = 1, startRow = 1)
+        if(input$abwesend){
+          addWorksheet(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"))
+          Name = sprintf(glue::glue('=IFERROR({namehjr}!B%d, "")'), 2:(SuS+1))
+          Abwesend = sprintf(glue::glue('=IFERROR(COUNTIF({namehjr}!F%d:{to}%d, 0), "")'), 2:(SuS+1), 2:(SuS+1))
+          Sitzungen = sprintf(glue::glue('=IFERROR(COUNTA({namehjr}!F%d:{to}%d), "")'), 2:(SuS+1), 2:(SuS+1))
+          Prozent = sprintf(glue::glue('=IFERROR(ROUND(COUNTIF({namehjr}!F%d:{to}%d, 0) / COUNTA({namehjr}!F%d:{to}%d), 2), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
+          abwesendheit <- data.frame(Name, Sitzungen, Abwesend, Prozent)
+          for(i in c(1:4)){
+            class(abwesendheit[,i]) <- c(class(abwesendheit[,i]), "formula")
+          }
+          addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(fgFill = 'grey95', textDecoration ="bold", border = "BottomTopRightLeft", borderColour = c("grey65", "grey95","grey95","grey95" ), borderStyle = "thick"), rows = 1, cols = 1:4, gridExpand = TRUE)
+          addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(fgFill = 'grey95'), rows = 2:(SuS+1), cols = 1:4, gridExpand = TRUE)
+          writeData(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), x = abwesendheit, startCol = 1, startRow = 1)
 
-        # disallow editing
-        protectWorksheet(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), protect = TRUE)
-        #remove gridlines
-        showGridLines(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), showGridLines = FALSE)
+          # add limitation note
+          writeData(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), x = data.frame("ACHTUNG" = "Es werden alle Spalten berücksichtigt (auch freie/irreguläre)"), startCol = 1, startRow = SuS+2)
+
+          # disallow editing
+          protectWorksheet(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), protect = TRUE)
+          #remove gridlines
+          showGridLines(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), showGridLines = FALSE)
+        }
+
 
         # documentation
         wb <- doku(wb = wb,
