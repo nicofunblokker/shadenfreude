@@ -211,8 +211,8 @@ server <- function(input, output, session) {
         empty$ID = 1:SuS
         empty$`Nachname, Vorname` = rep("", SuS)
         empty$Gesamtnote = sprintf('=IFERROR(AVERAGEIF(D%d:E%d, "<>0", D%d:E%d), "")', 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
-        empty$muendlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "<>*KLAUSUR*", F1:{to}1, "<>*FREI*", F%d:{to}%d, "<>0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
-        empty$schriftlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "*KLAUSUR*", F1:{to}1, "<>*FREI*", F%d:{to}%d, "<>0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
+        empty$muendlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "<>*KLAUSUR*", F1:{to}1, "<>*FREI*", F%d:{to}%d, ">0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
+        empty$schriftlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "*KLAUSUR*", F1:{to}1, "<>*FREI*", F%d:{to}%d, ">0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
 
         # Datensatz neu-anordnen
         full <- empty %>% select(ID, `Nachname, Vorname`, Gesamtnote, muendlich, schriftlich, everything())
@@ -272,7 +272,7 @@ server <- function(input, output, session) {
         # add data validation (only 1-6 for date cells)
         dataValidation(wb,
                        sheet =  namehjr, cols = idx0, rows = 2:(SuS+1),
-                       type = "decimal", operator = "between", value = c(0, 6))   # use decimal for exam grades
+                       type = "decimal", operator = "between", value = c(-1, 6))   # use decimal for exam grades
         # hacky way to prevent overwriting formula by disallowing values with textlength < 31
         dataValidation(wb,
                        sheet =  namehjr, cols = 3:5, rows = 2:(SuS+1),
@@ -322,29 +322,34 @@ server <- function(input, output, session) {
           addWorksheet(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"))
           ID = sprintf(glue::glue('=IFERROR({namehjr}!A%d, "")'), 2:(SuS+1))
           Name = sprintf(glue::glue('=IFERROR({namehjr}!B%d, "")'), 2:(SuS+1))
-          Abwesend = sprintf(glue::glue('=IFERROR(COUNTIFS({namehjr}!F1:{to}1, "<>*Frei*", {namehjr}!F%d:{to}%d, 0, {namehjr}!F%d:{to}%d, "<>"), "")'), 2:(SuS+1),2:(SuS+1),2:(SuS+1),2:(SuS+1))
+          Abwesend_einzeln = sprintf(glue::glue('=IFERROR(COUNTIFS({namehjr}!F1:{to}1, "<>*Frei*", {namehjr}!F%d:{to}%d, "<1", {namehjr}!F%d:{to}%d, "<>"), "")'), 2:(SuS+1),2:(SuS+1),2:(SuS+1),2:(SuS+1))
+          Abwesend = sprintf(glue::glue('=IFERROR(COUNTIFS({namehjr}!F1:{to}1, "<>*Frei*", {namehjr}!F%d:{to}%d, "<1", {namehjr}!F%d:{to}%d, "<>"), "") & " (" & IFERROR(COUNTIFS({namehjr}!F1:{to}1, "<>*Frei*", {namehjr}!F%d:{to}%d, -1, {namehjr}!F%d:{to}%d, "<>"), "") & ")"'), 2:(SuS+1),2:(SuS+1),2:(SuS+1),2:(SuS+1),2:(SuS+1),2:(SuS+1),2:(SuS+1),2:(SuS+1))
           Sitzungen = sprintf(glue::glue('=IFERROR(COUNTIFS({namehjr}!F1:{to}1, "<>*Frei*", {namehjr}!F%d:{to}%d, "<>"), "")'), 2:(SuS+1),2:(SuS+1))
-          Prozent = glue::glue('=IFERROR(ROUND({gsub("=","", Abwesend)} / {gsub("=","", Sitzungen)}, 2)*100, 0)')
+          Prozent = glue::glue('=IFERROR(ROUND(({gsub("=","", Abwesend_einzeln)} / {gsub("=","", Sitzungen)})*100, 2), 0)')
+          #Unentschuld = sprintf(glue::glue('=IFERROR(COUNTIFS({namehjr}!F1:{to}1, "<>*Frei*", {namehjr}!F%d:{to}%d, -1, {namehjr}!F%d:{to}%d, "<>"), "")'), 2:(SuS+1),2:(SuS+1),2:(SuS+1),2:(SuS+1))
           abwesendheit <- data.frame(ID, Name, Sitzungen, Abwesend, Prozent)
           for(i in c(1:5)){
             class(abwesendheit[,i]) <- c(class(abwesendheit[,i]), "formula")
           }
           addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(fgFill = 'grey95', textDecoration ="bold", border = "BottomTopRightLeft", borderColour = c("grey65", "grey95","grey95","grey95" ), borderStyle = "thick"), rows = 1, cols = 1:5, gridExpand = TRUE)
           addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(fgFill = 'grey95'), rows = 2:(SuS+1), cols = 1:5, gridExpand = TRUE)
+          addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(fgFill = 'grey95', halign = "right"), rows = 2:(SuS+1), cols = 4, gridExpand = TRUE)
           writeData(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), x = abwesendheit, startCol = 1, startRow = 1)
 
           # add average
-          avg_abwesend = sprintf(glue::glue('="Ø " & ROUND(AVERAGE(D2:D%d), 2)'), (SuS+1))
-          avg_percent = sprintf(glue::glue('="Ø " & IFERROR(ROUND(AVERAGE(E2:E%d), 2), "")'), (SuS+1))
-          averages <- data.frame(avg_abwesend, avg_percent)
-          for(i in c(1:2)){
-            class(averages[,i]) <- c(class(averages[,i]), "formula")
-          }
-          addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(halign = "right", fg = "grey80"), rows = SuS+2, cols = 4:5, gridExpand = TRUE)
-          writeData(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), x = averages, startCol = 4, startRow = SuS+2, colNames = FALSE)
+          #browser()
+          # avg_abwesend = sprintf(glue::glue('="Ø " & ROUND(AVERAGE(D2:D%d), 2)'), (SuS+1))
+          # avg_percent = sprintf(glue::glue('="Ø " & IFERROR(ROUND(AVERAGE(E2:E%d), 2), "")'), (SuS+1))
+          # averages <- data.frame(avg_abwesend, avg_percent)
+          # for(i in c(1:2)){
+          #   class(averages[,i]) <- c(class(averages[,i]), "formula")
+          # }
+          # print(avg_abwesend)
+          #addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(halign = "right", fg = "grey80"), rows = SuS+2, cols = 4:5, gridExpand = TRUE)
+          #writeData(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), x = averages, startCol = 4, startRow = SuS+2, colNames = FALSE)
 
           # add limitation note
-          writeData(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), x = data.frame("Hinweis" = "*Einträge in der Notentabelle mit '0' gelten als abwesend"), startCol = 1, startRow = SuS+3, colNames = FALSE)
+          writeData(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), x = data.frame("Hinweis" = c("*Einträge in der Notentabelle mit '0' gelten als abwesend, '-1' als unentschuldigt (in Klammern angegeben).", "**Neuzugänge und Abgänge müssen händisch hinzugefügt werden.")), startCol = 1, startRow = SuS+3, colNames = FALSE)
 
           # disallow editing
           protectWorksheet(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), protect = TRUE)
