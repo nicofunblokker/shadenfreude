@@ -302,6 +302,9 @@ server <- function(input, output, session) {
         notenspiegel$Anzahl <- gsub("Noten", namehjr, notenspiegel$Anzahl)
         class(notenspiegel$Anzahl) <- c(class(notenspiegel$Anzahl), "formula")
         addWorksheet(wb, glue::glue("Notenspiegel_HBJ{input$halbjahr}"))
+        addStyle(wb, sheet = glue::glue("Notenspiegel_HBJ{input$halbjahr}"), style = createStyle(fgFill = 'grey95', textDecoration ="bold", border = "BottomTopRightLeft", borderColour = c("grey65", "grey95","grey95","grey95" ), borderStyle = "thick"), rows = 1, cols = 1:2, gridExpand = TRUE)
+        addStyle(wb, sheet = glue::glue("Notenspiegel_HBJ{input$halbjahr}"), style = createStyle(fgFill = 'grey95'), rows = 2:7, cols = 1:2, gridExpand = TRUE)
+        showGridLines(wb, glue::glue("Notenspiegel_HBJ{input$halbjahr}"), showGridLines = FALSE)
         writeData(wb, glue::glue("Notenspiegel_HBJ{input$halbjahr}"), x = notenspiegel)
         # disallow editing
         protectWorksheet(wb, glue::glue("Notenspiegel_HBJ{input$halbjahr}"), protect = TRUE)
