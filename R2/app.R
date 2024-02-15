@@ -245,6 +245,9 @@ server <- function(input, output, session) {
         # füge borderColor hinzu + jeweils für body and headers
         bodyStyle <- createStyle(fgFill = 'grey95', border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65', halign = "center", valign = "center")
         addStyle(wb, sheet = namehjr, bodyStyle, rows = 1:(SuS+1), cols = 1:5, gridExpand = TRUE)
+        # Namenspalte left aligned
+        bodyStyle <- createStyle(fgFill = 'grey95', border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65', halign = "left", valign = "center")
+        addStyle(wb, sheet = namehjr, bodyStyle, rows = 1:(SuS+1), cols = 2, gridExpand = TRUE)
         bodyStyle2 <- createStyle(fgFill = 'grey90', border = c("top","bottom","left","right"), borderStyle = c('thin','thick','thin','thin'), borderColour = 'grey45', halign = "center", valign = "center")
         addStyle(wb, sheet = namehjr, bodyStyle2, rows = 1, cols = 1:5, gridExpand = TRUE)
 
