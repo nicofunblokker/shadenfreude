@@ -1,5 +1,4 @@
 doku <- function(wb, turnust, halbjr, sheetname, notensheet){
-
 # Add a worksheet for Dokumentation
 addWorksheet(wb, sheetname)
 
@@ -49,5 +48,4 @@ addStyle(wb, sheet = sheetname, style = createStyle(fgFill = 'grey95', halign = 
 # disallow editing
 protectWorksheet(wb, sheetname, protect = TRUE)
 return(wb)
-
 }

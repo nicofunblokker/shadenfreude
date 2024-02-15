@@ -49,7 +49,6 @@ ui <- page_fluid(
     size = "sm",
     individual = FALSE),
 
-
   # select halbjahr
   shinyWidgets::radioGroupButtons(
     inputId = "halbjahr",
@@ -106,7 +105,7 @@ server <- function(input, output, session) {
   termine <- reactiveVal(0)
   ausfall <- reactiveVal(0)
   api <- reactiveVal(0)           # api results zwischenspeichern
-  halbjahrend <- reactiveVal(0)   # alte Einträge zum HJ wieder verwenden, wenn HJ-Zeitraum nachträglich verkleinert werden
+  halbjahrend <- reactiveVal(0)
   halbjahranf <- reactiveVal(0)
 
   observe({
@@ -133,7 +132,7 @@ server <- function(input, output, session) {
     req(input$halbjahr, input$turnus)
     disable("halbjahr")
     disable("turnus")
-    #jahr <- today()   # oben festgelegt
+    #jahr <- today()   # oben global festgelegt
     if(!is.list(api()[1])){
       mindate <- floor_date(jahr, "halfyear")
       maxdate <- ceiling_date(jahr, "halfyear") + years(1)
@@ -187,7 +186,6 @@ server <- function(input, output, session) {
         # datensatz kreieren
         empty <- data.frame(matrix(ncol = length(termine()), nrow = SuS))
         colnames(empty) <- termine()
-        #browser()
         # wenn keine Klassenarbeiten gewählt, mache nichts
         if(length(klassenarbeiten) != "character(0)"){
           klassenarbeiten <- format(ymd(klassenarbeiten), "%a %d-%m-%y")
@@ -281,7 +279,7 @@ server <- function(input, output, session) {
                        sheet =  namehjr, cols = 3:5, rows = 2:(SuS+1),
                        type = "textLength", operator = "greaterThan", value = 30)
 
-
+        # progressbar update
         incProgress(amount = 1/3)
 
         # body regeln für gesamte Spalten
@@ -321,7 +319,7 @@ server <- function(input, output, session) {
 
         # abwesenheitszeiten
         if(input$abwesend){
-
+          # variablen erstellen
           addWorksheet(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"))
           ID = sprintf(glue::glue('=IFERROR({namehjr}!A%d, "")'), 2:(SuS+1))
           Name = sprintf(glue::glue('=IFERROR({namehjr}!B%d, "")'), 2:(SuS+1))
@@ -334,13 +332,14 @@ server <- function(input, output, session) {
           for(i in c(1:5)){
             class(abwesendheit[,i]) <- c(class(abwesendheit[,i]), "formula")
           }
+          #style hinzufügen
           addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(fgFill = 'grey95', textDecoration ="bold", border = "BottomTopRightLeft", borderColour = c("grey65", "grey95","grey95","grey95" ), borderStyle = "thick"), rows = 1, cols = 1:5, gridExpand = TRUE)
           addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(fgFill = 'grey95'), rows = 2:(SuS+1), cols = 1:5, gridExpand = TRUE)
           addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(fgFill = 'grey95', halign = "right"), rows = 2:(SuS+1), cols = 4, gridExpand = TRUE)
           writeData(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), x = abwesendheit, startCol = 1, startRow = 1)
 
           # add average
-          avg_abwesend = sprintf(glue::glue('="Ø " & ROUND(SUMPRODUCT(VALUE(LEFT(D2:D%d, FIND("(", D2:D%d)-1))), 2) / COUNTA(D2:D%d)'), (SuS+1), (SuS+1), (SuS+1))
+          avg_abwesend = sprintf(glue::glue('="Ø " & ROUND(SUMPRODUCT(VALUE(LEFT(D2:D%d, FIND("(", D2:D%d)-1))), 2) / COUNTA(D2:D%d)'), (SuS+1), (SuS+1), (SuS+1))   # instead of sumproduct use sum? cannot use average here because excel adds @
           avg_percent = sprintf(glue::glue('="Ø " & IFERROR(ROUND(AVERAGE(E2:E%d), 2), "")'), (SuS+1))
           averages <- data.frame(avg_abwesend, avg_percent)
           for(i in c(1:2)){
@@ -358,8 +357,7 @@ server <- function(input, output, session) {
           showGridLines(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), showGridLines = FALSE)
         }
 
-
-        # documentation
+        # documentation sheet
         wb <- doku(wb = wb,
                    #nsus=  input$sus,
                    #ntermine=length(6:ncol(full)),
@@ -368,7 +366,7 @@ server <- function(input, output, session) {
                    sheetname = glue::glue("Info_HBJ{input$halbjahr}"),
                    notensheet = namehjr)
 
-        # speichern
+        # save entire workbook
         saveWorkbook(wb, file, overwrite = TRUE)
       }
       )
