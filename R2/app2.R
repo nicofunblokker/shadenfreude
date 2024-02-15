@@ -5,9 +5,11 @@ library(lubridate)
 library(dplyr)
 library(shinyjs)
 library(bslib)
+#library(thematic)
 library(ggplot2)
 source("documentationSheet.R")
 source("getHolidays.R")
+#thematic_shiny()
 wochentage <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 names(wochentage) <- c("Mon", "Tue", "Wed", "Thu", "Fri")
 
@@ -179,14 +181,14 @@ server <- function(input, output, session) {
 
   # create plot
   output$plot <- renderPlot({
-    req(input$klassenarbeiten)
+    req(input$halbjahr, is.list(api()))
 
     df <- data.frame(days = seq(halbjahranf()[as.numeric(input$halbjahr)], halbjahrend()[as.numeric(input$halbjahr)], "day")) %>%
       mutate(woche = as.numeric(lubridate::isoweek(days)),
              monat = month(floor_date(days, "month")),
              jahr = lubridate::isoyear(days),
              wd = weekdays(days)) %>%
-      mutate(colr = wd %in% input$turnus | days %in% api()[[1]]) %>%
+      mutate(colr = if_else(wd %in% input$turnus, "wd", "nwd")) %>%
       group_by(jahr, woche) %>% mutate(idx = cur_group_id()) %>%
       ungroup() %>%
       mutate(woche_label = case_when(
@@ -196,20 +198,22 @@ server <- function(input, output, session) {
     df$wd <-  factor(df$wd, levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
 
     idx <- which(sapply(df$days, function(x) any(x %within% api()[[1]])))
-    klausuren <- ymd(input$klassenarbeiten)
-    df$colr[idx] <- FALSE
-    df$colr[df$days %in% klausuren] <- "red"
+    df$colr[idx] <- "nwd"
+
+    if(!is.null(input$klassenarbeiten)){
+      klausuren <- ymd(input$klassenarbeiten)
+      df$colr[df$days %in% klausuren] <- "Klausur"
+    }
 
     ggplot(df, aes(x = wd, y = reorder(woche_label, -idx), color = "blue", fill = colr)) +
       geom_tile(show.legend = F) +
       scale_color_manual(values = "white") +
-      scale_fill_manual(values = c("grey80", "salmon", "cornflowerblue")) +
+      scale_fill_manual(values = c("nwd" = "grey80", "Klausur" = "salmon", "wd" = "cornflowerblue")) +
       coord_equal() +
       theme_void() +
       theme(axis.text.x = element_text(angle = 90, hjust=0.95),
             axis.text.y = element_text(hjust = 1))
   })
-
   # Download button logic
   output$download_btn <- downloadHandler(
     filename = function() {
@@ -412,6 +416,7 @@ server <- function(input, output, session) {
       )
     })
 }
+
 
 shinyApp(ui, server)
 
