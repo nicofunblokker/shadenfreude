@@ -45,6 +45,14 @@ for(i in c(3:4)){
 writeData(wb, sheetname, x = d, startCol = 2, startRow = 11)
 addStyle(wb, sheet = sheetname, style = createStyle(fgFill = 'grey95', halign = "center", valign = "center", wrapText = TRUE, border = "BottomTopRightLeft", borderColour = "black"), rows = 11:12, cols = 2:6, gridExpand = TRUE)
 
+# addDropdown
+value <- c(-1, 0, seq(1,6, by = 0.5))
+value2 <- paste0(value, "H")
+dropdown <- data.frame(auswahl = c(value, value2))
+dropdown$auswahl <- gsub("\\.", ",",  dropdown$auswahl)
+writeData(wb, sheetname, x = dropdown, startCol = 2, startRow = 16)
+
+
 # disallow editing
 protectWorksheet(wb, sheetname, protect = TRUE)
 return(wb)
