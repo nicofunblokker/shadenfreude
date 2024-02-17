@@ -105,17 +105,6 @@ server <- function(input, output, session) {
   termine <- reactiveVal(0)
   ausfall <- reactiveVal(0)
   api <- reactiveVal(0)           # api results zwischenspeichern
-  api(list(new("Interval", .Data = c(777600, 86400, 864000, 0, 0, 3456000,
-                                     1296000, 0, 1036800, 86400, 1036800, 0, 0, 0, 0, 0, 0, 0, 0,
-                                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0), start = structure(c(1703635200,
-                                                                                              1706745600, 1710720000, 1715299200, 1716249600, 1719187200, 1.728e+09,
-                                                                                              1730419200, 1734912000, 1738540800, 1743984000, 1745971200, 1746144000,
-                                                                                              1748563200, 1749513600, 1704067200, 1711670400, 1711929600, 1714521600,
-                                                                                              1715212800, 1716163200, 1727913600, 1730332800, 1735084800, 1735171200,
-                                                                                              1735689600, 1744934400, 1745193600, 1746057600, 1748476800, 1749427200
-                                     ), class = c("POSIXct", "POSIXt"), tzone = "UTC"), tzone = "UTC"),
-           list(schuljahrenden = structure(c(20121, 19897), class = "Date"),
-                schuljahranfaenge = structure(c(19939, 19756), class = "Date"))))
   halbjahrend <- reactiveVal(0)
   halbjahranf <- reactiveVal(0)
 
@@ -249,7 +238,7 @@ server <- function(input, output, session) {
         }
 
         if(input$rotate == TRUE){
-          setColWidths(wb, namehjr, cols = c(1), widths = "auto")
+          setColWidths(wb, namehjr, cols = c(1), widths = 25)
           setColWidths(wb, namehjr, cols = 6:ncol(full), widths = 5)
           setRowHeights(wb, namehjr, rows = c(1), heights = c(80))
           headerstyle <- createStyle(halign = "center", valign = "center", textRotation = -90, wrapText  = TRUE)
