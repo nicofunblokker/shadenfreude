@@ -315,7 +315,7 @@ server <- function(input, output, session) {
         incProgress(amount = 2/3)
 
         # body regeln für alle spalten ab spalte 6 incl.
-        conditionalFormatting(wb, sheet =  namehjr, cols = idx0, rows = 2:(SuS+1), style = createStyle(bgFill = "white"), rule = ">6",
+        conditionalFormatting(wb, sheet =  namehjr, cols = idx0, rows = 2:(SuS+1), style = createStyle(bgFill = "white"), rule = '=OR(SUBSTITUTE(F2, "H", "") = "-1", SUBSTITUTE(F2, "H", "") = "0")',
                               type = "expression")
         conditionalFormatting(wb, sheet =  namehjr, cols = idx0, rows = 2:(SuS+1), style = createStyle(bgFill = "white"), rule = '=AND(NOT(ISBLANK(F2)), F2 < 1)',   # not blank but below 1
                               type = "expression")
