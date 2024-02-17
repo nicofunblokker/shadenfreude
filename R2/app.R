@@ -295,7 +295,7 @@ server <- function(input, output, session) {
         # add data validation (only 1-6 for date cells)
         dataValidation(wb,
                        sheet =  namehjr, cols = idx0, rows = 2:(SuS+1),
-                       type = "list", value = glue::glue("Info_HBJ{input$halbjahr}!$B$17:$B$42"))   # use decimal for exam grades
+                       type = "list", value = glue::glue("Info_HBJ{input$halbjahr}!$C$17:$C$42"))   # use decimal for exam grades
         # hacky way to prevent overwriting formula by disallowing values with textlength < 31
         dataValidation(wb,
                        sheet =  namehjr, cols = 3:5, rows = 2:(SuS+1),
