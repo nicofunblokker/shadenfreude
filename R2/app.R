@@ -220,14 +220,18 @@ server <- function(input, output, session) {
         empty$ID = 1:SuS
         empty$`Nachname, Vorname` = rep("", SuS)
         empty$Gesamtnote = sprintf('=IFERROR(AVERAGEIF(D%d:E%d, "<>0", D%d:E%d), "")', 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
-        empty$muendlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "<>*KLAUSUR*", F1:{to}1, "<>*FREI*", F%d:{to}%d, ">0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
-        empty$schriftlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "*KLAUSUR*", F1:{to}1, "<>*FREI*", F%d:{to}%d, ">0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
+        #empty$muendlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "<>*KLAUSUR*", F1:{to}1, "<>*FREI*", F%d:{to}%d, ">0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
+        muendlich = sprintf(glue::glue('= IFERROR(SUMPRODUCT(IF(IFERROR(ISNUMBER(SEARCH("-", F1:{to}1))*NOT(ISNUMBER(SEARCH("KLAUSUR", F1:{to}1)))*NOT(ISNUMBER(SEARCH("FREI", F1:{to}1)))*(--ISNUMBER(VALUE(SUBSTITUTE(F%d:{to}%d,"H",""))))*(VALUE(SUBSTITUTE(F%d:{to}%d,"H",""))>=1),0), VALUE(SUBSTITUTE(F%d:{to}%d,"H","")), 0)) / SUMPRODUCT(--(ISNUMBER(SEARCH("-", F1:{to}1)))*NOT(ISNUMBER(SEARCH("KLAUSUR", F1:{to}1)))*NOT(ISNUMBER(SEARCH("FREI", F1:{to}1)))*(--ISNUMBER(IFERROR(VALUE(SUBSTITUTE(F%d:{to}%d,"H","")),0)))*(IFERROR(VALUE(SUBSTITUTE(F%d:{to}%d,"H",""))>=1, 0))),"")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
+        empty$muendlich = NA
+        schriftlich = sprintf(glue::glue('= IFERROR(SUMPRODUCT(IF(IFERROR(ISNUMBER(SEARCH("-", F1:{to}1))*(ISNUMBER(SEARCH("KLAUSUR", F1:{to}1)))*NOT(ISNUMBER(SEARCH("FREI", F1:{to}1)))*(--ISNUMBER(VALUE(SUBSTITUTE(F%d:{to}%d,"H",""))))*(VALUE(SUBSTITUTE(F%d:{to}%d,"H",""))>=1),0), VALUE(SUBSTITUTE(F%d:{to}%d,"H","")), 0)) / SUMPRODUCT(--(ISNUMBER(SEARCH("-", F1:{to}1)))*(ISNUMBER(SEARCH("KLAUSUR", F1:{to}1)))*NOT(ISNUMBER(SEARCH("FREI", F1:{to}1)))*(--ISNUMBER(IFERROR(VALUE(SUBSTITUTE(F%d:{to}%d,"H","")),0)))*(IFERROR(VALUE(SUBSTITUTE(F%d:{to}%d,"H",""))>=1, 0))),"")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
+        empty$schriftlich = NA
+        #empty$schriftlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "*KLAUSUR*", F1:{to}1, "<>*FREI*", F%d:{to}%d, ">0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
 
         # Datensatz neu-anordnen
         full <- empty %>% select(ID, `Nachname, Vorname`, Gesamtnote, muendlich, schriftlich, everything())
 
         # Formelspalten als solche klassifizieren
-        for(i in c(3:5)){
+        for(i in c(3)){
           class(full[,i]) <- c(class(full[,i]), "formula")
         }
 
@@ -237,6 +241,13 @@ server <- function(input, output, session) {
         addWorksheet(wb, namehjr)
         freezePane(wb, namehjr, firstActiveCol = 6)
         writeData(wb, namehjr, x = full)
+        for(row in seq_along(muendlich)){
+          writeFormula(wb, namehjr, x = muendlich[row], startCol = 4, startRow = row+1, array = T)
+        }
+        for(row in seq_along(schriftlich)){
+          writeFormula(wb, namehjr, x = schriftlich[row], startCol = 5, startRow = row+1, array = T)
+        }
+
         if(input$rotate == TRUE){
           setColWidths(wb, namehjr, cols = c(1:2), widths = "auto")
           setColWidths(wb, namehjr, cols = 6:ncol(full), widths = 5)
