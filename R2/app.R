@@ -271,6 +271,11 @@ server <- function(input, output, session) {
         bodyStyle2 <- createStyle(fgFill = 'grey90', border = c("top","bottom","left","right"), borderStyle = c('thin','thick','thin','thin'), borderColour = 'grey45', halign = "center", valign = "center")
         addStyle(wb, sheet = namehjr, bodyStyle2, rows = 1, cols = 1:5, gridExpand = TRUE)
 
+        # center cells
+        bodyStyleCELLS <- createStyle(halign = "center", valign = "center")
+        addStyle(wb, sheet = namehjr, bodyStyleCELLS, rows = 2:(SuS+1), cols = 6:length(full), gridExpand = TRUE)
+
+
         # Style festlegen
         neutralStyle <- createStyle(bgFill = "grey", borderColour = 'grey', border = "TopBottomLeftRight", borderStyle = 'thin')
         posStyle <- createStyle(bgFill = "#c6d7ef", border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65')
