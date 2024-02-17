@@ -47,16 +47,16 @@ addStyle(wb, sheet = sheetname, style = createStyle(fgFill = 'grey95', halign = 
 
 # addDropdown
 value <- c(-1, 0, seq(1,6, by = 0.5))
-value2 <- paste0(value, "H")
+value2 <- paste0(value[-c(1:2)], "H")
 
 a = data.frame("Bedeutung" = c("untenschuldigt", "entschuldigt", rep("Notenwert", 11)), "Auswahl" = value)
-b =data.frame("Bedeutung" = c("untenschuldigt ohne Hausarbeit", "entschuldigt ohne Hausarbeit", rep("Notenwert ohne Hausarbeit", 11)), "Auswahl" = gsub("\\.", ",",  value2))
+b =data.frame("Bedeutung" = rep("Notenwert ohne Hausarbeit", 11), "Auswahl" = gsub("\\.", ",",  value2))
 
-addStyle(wb, sheet = sheetname, style = createStyle(fgFill = 'grey95', wrapText = F), rows = 17:42, cols = 2:3, gridExpand = TRUE)
+addStyle(wb, sheet = sheetname, style = createStyle(fgFill = 'grey95', wrapText = F), rows = 17:40, cols = 2:3, gridExpand = TRUE)
 addStyle(wb, sheet = sheetname, style = createStyle(fgFill = 'grey65', wrapText = F), rows = 16, cols = 2:3, gridExpand = TRUE)
 
 writeData(wb, sheetname, x = a, startCol = 2, startRow = 16)
-writeData(wb, sheetname, x =  b, startCol = 2, startRow = 17+length(value),colNames  =F)
+writeData(wb, sheetname, x = b, startCol = 2, startRow = 17+length(value),colNames  =F)
 
 # disallow editing
 protectWorksheet(wb, sheetname, protect = TRUE)

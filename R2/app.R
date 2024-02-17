@@ -208,7 +208,7 @@ server <- function(input, output, session) {
         # Variablen einführen
         empty$Hausarbeit = sprintf(glue::glue('=IF(COUNTIF(F%d:{to}%d, "*H*") = 0, "", COUNTIF(F%d:{to}%d, "*H*"))'), 2:(SuS+1), 2:(SuS+1),2:(SuS+1), 2:(SuS+1))
         empty$`Nachname, Vorname` = rep("", SuS)
-        empty$Gesamtnote = sprintf('=IFERROR(AVERAGEIF(D%d:E%d, "<>0", D%d:E%d), "")', 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
+        empty$Gesamtnote = sprintf('=IFERROR(AVERAGEIF(C%d:D%d, "<>0", C%d:D%d), "")', 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
         #empty$muendlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "<>*KLAUSUR*", F1:{to}1, "<>*FREI*", F%d:{to}%d, ">0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
         muendlich = sprintf(glue::glue('= IFERROR(SUMPRODUCT(IF(IFERROR(ISNUMBER(SEARCH("-", F1:{to}1))*NOT(ISNUMBER(SEARCH("KLAUSUR", F1:{to}1)))*NOT(ISNUMBER(SEARCH("FREI", F1:{to}1)))*(--ISNUMBER(VALUE(SUBSTITUTE(F%d:{to}%d,"H",""))))*(VALUE(SUBSTITUTE(F%d:{to}%d,"H",""))>=1),0), VALUE(SUBSTITUTE(F%d:{to}%d,"H","")), 0)) / SUMPRODUCT(--(ISNUMBER(SEARCH("-", F1:{to}1)))*NOT(ISNUMBER(SEARCH("KLAUSUR", F1:{to}1)))*NOT(ISNUMBER(SEARCH("FREI", F1:{to}1)))*(--ISNUMBER(IFERROR(VALUE(SUBSTITUTE(F%d:{to}%d,"H","")),0)))*(IFERROR(VALUE(SUBSTITUTE(F%d:{to}%d,"H",""))>=1, 0))),"")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
         empty$muendlich = NA
@@ -323,7 +323,7 @@ server <- function(input, output, session) {
         showGridLines(wb, namehjr, showGridLines = FALSE)
 
         # notenspiegel
-        notenspiegel <- data.frame(Note = 1:6, Anzahl = sprintf('=COUNTIFS(Noten!C%d:Noten!C%d, ">%d,5", Noten!C%d:Noten!C%d, "<=%d,5")', 2, SuS+1, 0:5, 2, SuS+1, 1:6))
+        notenspiegel <- data.frame(Note = 1:6, Anzahl = sprintf('=COUNTIFS(Noten!B%d:Noten!B%d, ">%d,5", Noten!B%d:Noten!B%d, "<=%d,5")', 2, SuS+1, 0:5, 2, SuS+1, 1:6))
         notenspiegel$Anzahl <- gsub("Noten", namehjr, notenspiegel$Anzahl)
         class(notenspiegel$Anzahl) <- c(class(notenspiegel$Anzahl), "formula")
         addWorksheet(wb, glue::glue("Notenspiegel_HBJ{input$halbjahr}"))
