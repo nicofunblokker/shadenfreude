@@ -217,7 +217,7 @@ server <- function(input, output, session) {
         to <- tail(to_all,1)
 
         # Variablen einführen
-        empty$ID = 1:SuS
+        empty$Hausarbeit = sprintf(glue::glue('=IF(COUNTIF(F%d:{to}%d, "*H*") = 0, "", COUNTIF(F%d:{to}%d, "*H*"))'), 2:(SuS+1), 2:(SuS+1),2:(SuS+1), 2:(SuS+1))
         empty$`Nachname, Vorname` = rep("", SuS)
         empty$Gesamtnote = sprintf('=IFERROR(AVERAGEIF(D%d:E%d, "<>0", D%d:E%d), "")', 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
         #empty$muendlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "<>*KLAUSUR*", F1:{to}1, "<>*FREI*", F%d:{to}%d, ">0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
@@ -228,10 +228,10 @@ server <- function(input, output, session) {
         #empty$schriftlich = sprintf(glue::glue('= IFERROR(AVERAGEIFS(F%d:{to}%d, F1:{to}1, "*KLAUSUR*", F1:{to}1, "<>*FREI*", F%d:{to}%d, ">0"), "")'), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1), 2:(SuS+1))
 
         # Datensatz neu-anordnen
-        full <- empty %>% select(ID, `Nachname, Vorname`, Gesamtnote, muendlich, schriftlich, everything())
+        full <- empty %>% select(`Nachname, Vorname`, Gesamtnote, muendlich, schriftlich, Hausarbeit,  everything())
 
         # Formelspalten als solche klassifizieren
-        for(i in c(3)){
+        for(i in c(2,5)){
           class(full[,i]) <- c(class(full[,i]), "formula")
         }
 
@@ -242,19 +242,20 @@ server <- function(input, output, session) {
         freezePane(wb, namehjr, firstActiveCol = 6)
         writeData(wb, namehjr, x = full)
         for(row in seq_along(muendlich)){
-          writeFormula(wb, namehjr, x = muendlich[row], startCol = 4, startRow = row+1, array = T)
+          writeFormula(wb, namehjr, x = muendlich[row], startCol = 3, startRow = row+1, array = T)
         }
         for(row in seq_along(schriftlich)){
-          writeFormula(wb, namehjr, x = schriftlich[row], startCol = 5, startRow = row+1, array = T)
+          writeFormula(wb, namehjr, x = schriftlich[row], startCol = 4, startRow = row+1, array = T)
         }
 
         if(input$rotate == TRUE){
-          setColWidths(wb, namehjr, cols = c(1:2), widths = "auto")
+          setColWidths(wb, namehjr, cols = c(1), widths = "auto")
           setColWidths(wb, namehjr, cols = 6:ncol(full), widths = 5)
           setRowHeights(wb, namehjr, rows = c(1), heights = c(80))
           headerstyle <- createStyle(halign = "center", valign = "center", textRotation = -90, wrapText  = TRUE)
         } else {
-          setColWidths(wb, namehjr, cols = c(1:2, 6:ncol(full)), widths = "auto")
+          setColWidths(wb, namehjr, cols = 1, widths = 25)
+          setColWidths(wb, namehjr, cols = c(6:ncol(full)), widths = "auto")
           setRowHeights(wb, namehjr, rows = c(1), heights = c(40))
           headerstyle <- createStyle(halign = "center", valign = "center")
         }
@@ -267,7 +268,7 @@ server <- function(input, output, session) {
         addStyle(wb, sheet = namehjr, bodyStyle, rows = 1:(SuS+1), cols = 1:5, gridExpand = TRUE)
         # Namenspalte left aligned
         bodyStyle <- createStyle(fgFill = 'grey95', border = "TopBottomLeftRight", borderStyle = 'thin', borderColour = 'grey65', halign = "left", valign = "center")
-        addStyle(wb, sheet = namehjr, bodyStyle, rows = 1:(SuS+1), cols = 2, gridExpand = TRUE)
+        addStyle(wb, sheet = namehjr, bodyStyle, rows = 1:(SuS+1), cols = 1, gridExpand = TRUE)
         bodyStyle2 <- createStyle(fgFill = 'grey90', border = c("top","bottom","left","right"), borderStyle = c('thin','thick','thin','thin'), borderColour = 'grey45', halign = "center", valign = "center")
         addStyle(wb, sheet = namehjr, bodyStyle2, rows = 1, cols = 1:5, gridExpand = TRUE)
 
@@ -303,7 +304,7 @@ server <- function(input, output, session) {
                        type = "list", value = glue::glue("Info_HBJ{input$halbjahr}!$C$17:$C$42"))   # use decimal for exam grades
         # hacky way to prevent overwriting formula by disallowing values with textlength < 31
         dataValidation(wb,
-                       sheet =  namehjr, cols = 3:5, rows = 2:(SuS+1),
+                       sheet =  namehjr, cols = 2:5, rows = 2:(SuS+1),
                        type = "textLength", operator = "greaterThan", value = 30)
 
         # progressbar update
@@ -348,32 +349,32 @@ server <- function(input, output, session) {
         if(input$abwesend){
           # variablen erstellen
           addWorksheet(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"))
-          ID = sprintf(glue::glue('=IFERROR({namehjr}!A%d, "")'), 2:(SuS+1))
-          Name = sprintf(glue::glue('=IFERROR({namehjr}!B%d, "")'), 2:(SuS+1))
+          #ID = sprintf(glue::glue('=IFERROR({namehjr}!A%d, "")'), 2:(SuS+1))
+          Name = sprintf(glue::glue('=IFERROR({namehjr}!A%d, "")'), 2:(SuS+1))
           Abwesend_einzeln = sprintf(glue::glue('=IFERROR(COUNTIFS({namehjr}!F1:{to}1, "<>*Frei*", {namehjr}!F%d:{to}%d, "<1", {namehjr}!F%d:{to}%d, "<>"), "")'), 2:(SuS+1),2:(SuS+1),2:(SuS+1),2:(SuS+1))
           Abwesend = sprintf(glue::glue('=IFERROR(COUNTIFS({namehjr}!F1:{to}1, "<>*Frei*", {namehjr}!F%d:{to}%d, "<1", {namehjr}!F%d:{to}%d, "<>"), "") & " (" & IFERROR(COUNTIFS({namehjr}!F1:{to}1, "<>*Frei*", {namehjr}!F%d:{to}%d, -1, {namehjr}!F%d:{to}%d, "<>"), "") & ")"'), 2:(SuS+1),2:(SuS+1),2:(SuS+1),2:(SuS+1),2:(SuS+1),2:(SuS+1),2:(SuS+1),2:(SuS+1))
           Sitzungen = sprintf(glue::glue('=IFERROR(COUNTIFS({namehjr}!F1:{to}1, "<>*Frei*", {namehjr}!F%d:{to}%d, "<>"), "")'), 2:(SuS+1),2:(SuS+1))
           Prozent = glue::glue('=IFERROR(ROUND(({gsub("=","", Abwesend_einzeln)} / {gsub("=","", Sitzungen)})*100, 2), 0)')
           #Unentschuld = sprintf(glue::glue('=IFERROR(COUNTIFS({namehjr}!F1:{to}1, "<>*Frei*", {namehjr}!F%d:{to}%d, -1, {namehjr}!F%d:{to}%d, "<>"), "")'), 2:(SuS+1),2:(SuS+1),2:(SuS+1),2:(SuS+1))
-          abwesendheit <- data.frame(ID, Name, Sitzungen, Abwesend, Prozent)
-          for(i in c(1:5)){
+          abwesendheit <- data.frame(Name, Sitzungen, Abwesend, Prozent)
+          for(i in c(1:4)){
             class(abwesendheit[,i]) <- c(class(abwesendheit[,i]), "formula")
           }
           #style hinzufügen
-          addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(fgFill = 'grey95', textDecoration ="bold", border = "BottomTopRightLeft", borderColour = c("grey65", "grey95","grey95","grey95" ), borderStyle = "thick"), rows = 1, cols = 1:5, gridExpand = TRUE)
-          addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(fgFill = 'grey95'), rows = 2:(SuS+1), cols = 1:5, gridExpand = TRUE)
-          addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(fgFill = 'grey95', halign = "right"), rows = 2:(SuS+1), cols = 4, gridExpand = TRUE)
+          addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(fgFill = 'grey95', textDecoration ="bold", border = "BottomTopRightLeft", borderColour = c("grey65", "grey95","grey95","grey95" ), borderStyle = "thick"), rows = 1, cols = 1:4, gridExpand = TRUE)
+          addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(fgFill = 'grey95'), rows = 2:(SuS+1), cols = 1:4, gridExpand = TRUE)
+          addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(fgFill = 'grey95', halign = "right"), rows = 2:(SuS+1), cols = 3, gridExpand = TRUE)
           writeData(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), x = abwesendheit, startCol = 1, startRow = 1)
 
           # add average
-          avg_abwesend = sprintf(glue::glue('="Ø " & ROUND(SUMPRODUCT(VALUE(LEFT(D2:D%d, FIND("(", D2:D%d)-1))), 2) / COUNTA(D2:D%d)'), (SuS+1), (SuS+1), (SuS+1))   # instead of sumproduct use sum? cannot use average here because excel adds @
-          avg_percent = sprintf(glue::glue('="Ø " & IFERROR(ROUND(AVERAGE(E2:E%d), 2), "")'), (SuS+1))
+          avg_abwesend = sprintf(glue::glue('="Ø " & ROUND(SUMPRODUCT(VALUE(LEFT(C2:C%d, FIND("(", C2:C%d)-1))), 2) / COUNTA(C2:C%d)'), (SuS+1), (SuS+1), (SuS+1))   # instead of sumproduct use sum? cannot use average here because excel adds @
+          avg_percent = sprintf(glue::glue('="Ø " & IFERROR(ROUND(AVERAGE(D2:D%d), 2), "")'), (SuS+1))
           averages <- data.frame(avg_abwesend, avg_percent)
           for(i in c(1:2)){
             class(averages[,i]) <- c(class(averages[,i]), "formula")
           }
-          addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(halign = "right", fg = "grey80"), rows = SuS+2, cols = 4:5, gridExpand = TRUE)
-          writeData(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), x = averages, startCol = 4, startRow = SuS+2, colNames = FALSE)
+          addStyle(wb, sheet = glue::glue("Abwesendheit_HBJ{input$halbjahr}"), style = createStyle(halign = "right", fg = "grey80"), rows = SuS+2, cols = 3:4, gridExpand = TRUE)
+          writeData(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), x = averages, startCol = 3, startRow = SuS+2, colNames = FALSE)
 
           # add limitation note
           writeData(wb, glue::glue("Abwesendheit_HBJ{input$halbjahr}"), x = data.frame("Hinweis" = c("*Einträge in der Notentabelle mit '0' gelten als abwesend, '-1' als unentschuldigt (in Klammern angegeben).", "**Neuzugänge und Abgänge müssen händisch hinzugefügt und Formel ggfs. angepasst werden.")), startCol = 1, startRow = SuS+3, colNames = FALSE)
