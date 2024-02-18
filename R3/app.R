@@ -100,7 +100,7 @@ ui <- page_fluid(
   shinyjs::hidden(plotOutput("plot", width = 300)),
 
   # Download button
-  downloadButton("download_btn", "10. Generiere Tabelle"),
+  downloadButton("download_btn", "Generiere Tabelle"),
 
 
 
