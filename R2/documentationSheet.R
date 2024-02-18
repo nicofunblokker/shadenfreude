@@ -47,7 +47,7 @@ addStyle(wb, sheet = sheetname, style = createStyle(fgFill = 'grey95', halign = 
 
 # addDropdown
 value <- c(-1, 0, seq(1,6, by = 0.5))
-value2 <- paste0(value[-c(1:2)], "H")
+value2 <- paste0(value[-c(1:2)], "*")
 
 a = data.frame("Bedeutung" = c("untenschuldigt", "entschuldigt", rep("Notenwert", 11)), "Auswahl" = value)
 b =data.frame("Bedeutung" = rep("Notenwert ohne Hausarbeit", 11), "Auswahl" = gsub("\\.", ",",  value2))
