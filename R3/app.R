@@ -26,6 +26,7 @@ ui <- page_fluid(
   div(style = "float:right; padding-right: 30px;",
       input_dark_mode(id = "dark_mode", mode = "light")
   ),
+  tags$head(tags$link(rel = "icon", type = "image/png", href = "icon.png")),
   style = 'margin: 10px 15px',
   shinyjs::useShinyjs(),
   titlePanel("Notentabelle v3"),
