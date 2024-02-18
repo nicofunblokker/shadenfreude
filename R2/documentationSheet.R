@@ -36,7 +36,7 @@ addStyle(wb, sheet = sheetname, style = createStyle(textDecoration = "bold", hal
 text2 <- glue::glue("{today()}")
 d <- data.frame("Erstellt" = text2,
                 "Halbjahr" = halbjr,
-                "SuS" = glue::glue('=COUNTIF({notensheet}!A:A, ">0")'),
+                "SuS" = glue::glue('=COUNTIF({notensheet}!A:A, "*")-1'),
                 "Termine" = glue::glue('=COUNTIFS({notensheet}!1:1, "*-*", {notensheet}!1:1, "<>*Klausur*", {notensheet}!1:1, "<>*Frei*") & " + " & COUNTIFS({notensheet}!1:1, "*Klausur*", {notensheet}!1:1, "<>*Frei*")'),
                 "Turnus" = paste(turnust, collapse = "\n"))
 for(i in c(3:4)){
