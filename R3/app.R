@@ -86,7 +86,7 @@ ui <- page_fluid(
 
   shinyWidgets::switchInput(
     inputId = "abwesend",
-    label = "9. Abwesendheitssheet",
+    label = "8. Abwesendheitssheet",
     value = TRUE,
     labelWidth = "220px"
   ),
