@@ -68,31 +68,32 @@ ui <- page_fluid(
                                    position = 'bottom right',
                                    disabledDates = c(0,6), minDate = Sys.Date() - 7, maxDate = Sys.Date()+182),
 
-  # filename
-  shiny::textInput("filename", "5. Name der Notentabelle", placeholder = "10a_2024_HJ1"),
 
   shinyWidgets::switchInput(
-    "show", label = "6. Weitere Einstellungen",
+    "show", label = '<i class="fa-solid fa-gear"></i>  Weitere Einstellungen',
     value = FALSE,
     labelWidth = "220px"),
 
+  # filename
+  shinyjs::hidden(shiny::textInput("filename", "Name der Notentabelle", placeholder = "10a_2024_HJ1")),
+
   shinyjs::hidden(shinyWidgets::switchInput(
     inputId = "holiday",
-    label = "7. freie Tage anzeigen",
+    label = '<i class="fa-solid fa-champagne-glasses"></i>  freie Tage anzeigen',
     value = FALSE,
     labelWidth = "220px"
   )),
 
   shinyjs::hidden(shinyWidgets::switchInput(
     inputId = "rotate",
-    label = "8. Spaltennamen rotieren",
+    label = '<i class="fa-solid fa-rotate"></i>  Spaltennamen rotieren',
     value = FALSE,
     labelWidth = "220px"
   )),
 
   shinyjs::hidden(shinyWidgets::switchInput(
     inputId = "abwesend",
-    label = "9. Abwesendheitssheet",
+    label = '<i class="fa-solid fa-user-xmark"></i>  Abwesendheitssheet',
     value = TRUE,
     labelWidth = "220px"
   )),
@@ -116,11 +117,13 @@ server <- function(input, output, session) {
   observeEvent(input$show, {
     if(input$show == FALSE){
       shinyjs::hideElement(id= "plot")
-      shinyjs::hideElement(id= "abwesend")
-      shinyjs::hideElement(id= "rotate")
+      shinyjs::hideElement(id= "filename")
       shinyjs::hideElement(id= "holiday")
+      shinyjs::hideElement(id= "rotate")
+      shinyjs::hideElement(id= "abwesend")
     } else {
       shinyjs::showElement(id= "plot")
+      shinyjs::showElement(id= "filename")
       shinyjs::showElement(id= "holiday")
       shinyjs::showElement(id= "rotate")
       shinyjs::showElement(id= "abwesend")
@@ -231,7 +234,8 @@ server <- function(input, output, session) {
       theme(axis.text.x = element_text(angle = 90, hjust=0.95),
             axis.text.y = element_text(hjust = 1),
             plot.margin = margin(b=0.5, unit = "cm"))+
-      scale_x_discrete(labels = substr(levels(df$wd), 1,3))
+      scale_x_discrete(labels = substr(levels(df$wd), 1,3)) +
+      ggtitle("Übersicht Hbj.")
   })
   # Download button logic
   output$download_btn <- downloadHandler(
