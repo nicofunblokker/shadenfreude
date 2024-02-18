@@ -90,8 +90,18 @@ ui <- page_fluid(
     value = TRUE,
     labelWidth = "220px"
   ),
+
+  shinyWidgets::switchInput(
+    "show", label = "9. Übersicht anzeigen",
+    value = FALSE,
+    labelWidth = "220px"),
+
+  shinyjs::hidden(plotOutput("plot", width = 300)),
+
   # Download button
-  downloadButton("download_btn", "9. Generiere Tabelle"),
+  downloadButton("download_btn", "10. Generiere Tabelle"),
+
+
 
   hr(),
   HTML("Referenz: <a href='https://www.openholidaysapi.org/en/'>Ferien- und Feiertagsdaten</a> unter <a href='https://raw.githubusercontent.com/openpotato/openholidaysapi.data/main/LICENSE'>dieser Lizenz</a>.")
@@ -101,6 +111,16 @@ server <- function(input, output, session) {
   disable("halbjahr")
   disable("klassenarbeiten")
   disable("download_btn")
+
+  observeEvent(input$show, {
+    if(input$show == FALSE){
+      shinyjs::hideElement(id= "plot")
+    } else {
+      shinyjs::showElement(id= "plot")
+    }
+
+  })
+
   # reactive Values setzen
   termine <- reactiveVal(0)
   ausfall <- reactiveVal(0)
@@ -169,7 +189,42 @@ server <- function(input, output, session) {
       minDate = anf, maxDate = end))
     enable("download_btn")
   })
+  # create plot
+  output$plot <- renderPlot({
+    req(input$halbjahr, is.list(api()))
 
+    df <- data.frame(days = seq(halbjahranf()[as.numeric(input$halbjahr)], halbjahrend()[as.numeric(input$halbjahr)], "day")) %>%
+      mutate(woche = as.numeric(lubridate::isoweek(days)),
+             monat = month(floor_date(days, "month")),
+             jahr = lubridate::isoyear(days),
+             wd = weekdays(days)) %>%
+      mutate(colr = if_else(wd %in% input$turnus, "wd", "nwd")) %>%
+      group_by(jahr, woche) %>% mutate(idx = cur_group_id()) %>%
+      ungroup() %>%
+      mutate(woche_label = case_when(
+        idx == min(idx) ~ paste("KW", woche),
+        TRUE ~ as.character(woche)))
+
+    df$wd <-  factor(df$wd, levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+
+    idx <- which(sapply(df$days, function(x) any(x %within% api()[[1]])))
+    df$colr[idx] <- "nwd"
+
+    if(!is.null(input$klassenarbeiten)){
+      klausuren <- ymd(input$klassenarbeiten)
+      df$colr[df$days %in% klausuren] <- "Klausur"
+    }
+
+    ggplot(df, aes(x = wd, y = reorder(woche_label, -idx), color = "blue", fill = colr)) +
+      geom_tile(show.legend = F) +
+      scale_color_manual(values = "white") +
+      scale_fill_manual(values = c("nwd" = "grey80", "Klausur" = "salmon", "wd" = "cornflowerblue")) +
+      coord_equal() +
+      theme_void() +
+      theme(axis.text.x = element_text(angle = 90, hjust=0.95),
+            axis.text.y = element_text(hjust = 1))+
+      scale_x_discrete(labels = substr(levels(df$wd), 1,3))
+  })
   # Download button logic
   output$download_btn <- downloadHandler(
     filename = function() {
