@@ -262,7 +262,7 @@ server <- function(input, output, session) {
         addStyle(wb, sheet = namehjr, bodyStyle2, rows = 1, cols = 1:5, gridExpand = TRUE)
 
         # center cells
-        bodyStyleCELLS <- createStyle(halign = "center", valign = "center")
+        bodyStyleCELLS <- createStyle(halign = "right", valign = "center")
         addStyle(wb, sheet = namehjr, bodyStyleCELLS, rows = 2:(SuS+1), cols = 6:length(full), gridExpand = TRUE)
 
 
