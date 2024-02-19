@@ -30,7 +30,8 @@ ui <- page_fluid(
   style = 'margin: 10px 15px',
   shinyjs::useShinyjs(),
   titlePanel("Notentabelle v3"),
-  HTML('Schritte bitte nacheinander ausfüllen.<br> Im Zweifel neuladen.'),
+  #HTML('Schritte bitte nacheinander ausfüllen.<br> Im Zweifel neuladen.'),
+  HTML('Erstelle Exceltabelle mit einzelnen Sitzungen.'),
   br(),
   br(),
 
@@ -52,6 +53,7 @@ ui <- page_fluid(
     individual = FALSE),
 
   # select halbjahr
+
   shinyWidgets::radioGroupButtons(
     inputId = "halbjahr",
     label = "3. Halbjahr",
@@ -75,8 +77,12 @@ ui <- page_fluid(
     value = FALSE,
     labelWidth = "220px"),
 
-  # filename
-  shinyjs::hidden(shiny::textInput("filename", "Name der Notentabelle", placeholder = "10a_2024_HJ1")),
+  shinyjs::hidden(shinyWidgets::switchInput(
+    inputId = "abwesend",
+    label = '<i class="fa-solid fa-user-xmark"></i>  Abwesendheitssheet',
+    value = TRUE,
+    labelWidth = "220px"
+  )),
 
   shinyjs::hidden(shinyWidgets::switchInput(
     inputId = "holiday",
@@ -92,14 +98,18 @@ ui <- page_fluid(
     labelWidth = "220px"
   )),
 
+  tooltip(
   shinyjs::hidden(shinyWidgets::switchInput(
-    inputId = "abwesend",
-    label = '<i class="fa-solid fa-user-xmark"></i>  Abwesendheitssheet',
-    value = TRUE,
+    inputId = "showplot",
+    label = '<i class="fa-solid fa-layer-group"></i>  Übersicht anzeigen',
+    value = FALSE,
     labelWidth = "220px"
-  )),
+  )), "Zeige nachfolgend eine kalendarische Übersicht des Halbjahrs"),
 
   shinyjs::hidden(plotOutput("plot", width = 300)),
+
+  # filename
+  shinyjs::hidden(shiny::textInput("filename", "Name der Notentabelle", placeholder = "10a_2024_HJ1")),
 
   # Download button
   downloadButton("download_btn", "Generiere Tabelle"),
@@ -115,15 +125,22 @@ server <- function(input, output, session) {
   disable("klassenarbeiten")
   disable("download_btn")
 
-  observeEvent(input$show, {
+  # hide optional settings
+  observeEvent(c(input$show, input$showplot), {
     if(input$show == FALSE){
       shinyjs::hideElement(id= "plot")
+      shinyjs::hideElement(id= "showplot")
       shinyjs::hideElement(id= "filename")
       shinyjs::hideElement(id= "holiday")
       shinyjs::hideElement(id= "rotate")
       shinyjs::hideElement(id= "abwesend")
     } else {
-      shinyjs::showElement(id= "plot")
+      if(input$showplot & is.list(api())){
+        shinyjs::showElement(id= "plot")
+      } else {
+        shinyjs::hideElement(id= "plot")
+      }
+      shinyjs::showElement(id= "showplot")
       shinyjs::showElement(id= "filename")
       shinyjs::showElement(id= "holiday")
       shinyjs::showElement(id= "rotate")
@@ -151,6 +168,13 @@ server <- function(input, output, session) {
     if(length(input$turnus) == 0){
       disable("download_btn")
       disable("klassenarbeiten")
+    }
+
+    # showplot option nur möglich, wenn api abgefragt
+    if(!is.list(api())){
+      shinyWidgets::updateSwitchInput(session, "showplot", disabled = TRUE)
+    } else {
+      shinyWidgets::updateSwitchInput(session, "showplot", disabled = FALSE)
     }
   })
 
@@ -229,7 +253,7 @@ server <- function(input, output, session) {
     ggplot(df, aes(x = wd, y = reorder(woche_label, -idx), color = "blue", fill = colr)) +
       geom_tile(show.legend = F) +
       scale_color_manual(values = "white") +
-      scale_fill_manual(values = c("nwd" = "grey80", "Klausur" = "salmon", "wd" = "cornflowerblue")) +
+      scale_fill_manual(values = c("nwd" = "grey90", "Klausur" = "salmon", "wd" = "cornflowerblue")) +
       coord_equal() +
       theme_void() +
       theme(axis.text.x = element_text(angle = 90, hjust=0.95),
